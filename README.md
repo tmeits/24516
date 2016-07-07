@@ -1,2 +1,2 @@
 # 24516
-The Dendrochronology Program Library in R
+The Dendrochronology Scripts in R
