@@ -130,12 +130,14 @@ g1
 
 ```{r getyear}
 get_one_year <- function(years, now) {
+  #
   return(years[years$Year == now, ])
 }
 Y64 <- get_one_year(Minusinsk.cli, 1964)
 
 season_growth <- function(sgs, s.year) {
-  return(c(sgs[sgs$year == 1964, ]$BG1, sgs[sgs$year == 1964, ]$EG1))
+  #
+  return(c(sgs[sgs$year == s.year, ]$BG1, sgs[sgs$year == s.year, ]$EG1))
 }
 S64 <- season_growth(schc, 1964)
 ```
@@ -148,21 +150,9 @@ S64 <- season_growth(schc, 1964)
 # http://www.stat.berkeley.edu/classes/s133/dates.html
 # http://www.statmethods.net/advstats/timeseries.html
 
-# Дата перехода через 0C в начале сезона роста
-STDAT0 <- 0
-# Дата перехода через 5C в начале сезона роста
-STDAT5 <- 
-# Дата перехода в конце сезона через 5C
-FDAT0 <- 
-# Дата перехода в конце сезона через 0C 
-FDAT5 <- 
-# Длительность сезона от 0C до 0C
-INTER0 <- 
-# Длительность сезона от 5C до 5C
-INTER5 <- 
 
-# Дата достижения максимума температуры
-MDAT <- 
+ 
+
 # Сумма температур больше 0C
 SUMT0 <- 
 # Сумма температур больше 5C
@@ -179,6 +169,70 @@ FT225 <-
 SPEEDT <- 
  
 
+```
+
+```{r inter0}
+# Длительность сезона от 0C до 0C или от 5C до 5C
+INTER0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  sg   <- season_growth(data.calc, s.year)
+  lbeg <- STDAT0(data.cli, data.calc, s.year, temp.c)
+  lend <- FDAT0(data.cli, data.calc, s.year, temp.c)
+
+  startdate <- as.Date(paste(as.character(lbeg[3]), "-", as.character(lbeg[2]), "-",
+                      as.character(lbeg[1]), sep = ''))
+  enddate   <- as.Date(paste(as.character(lend[3]), "-", as.character(lend[2]), "-",
+                      as.character(lend[1]), sep = ''))
+  # http://distrland.blogspot.ru/2015/04/r-2-date-base-r.html
+  days      <- as.numeric(difftime(enddate , startdate, units = "day"))
+  
+  # install.packages("timeDate")
+  # https://journal.r-project.org/archive/2011-1/RJournal_2011-1_Chalabi~et~al.pdf
+  return(days)
+}
+INTER0(Minusinsk.cli, schc, 1965, 0)
+INTER0(Minusinsk.cli, schc, 1969, 5)
+
+```
+
+```{r stdat0}
+# Дата перехода через 0C-5C в начале сезона роста
+STDAT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  sg <- season_growth(data.calc, s.year)
+  data.0c <- c(1, 1, 1)
+  for(i in 1: length(year[, 1])) {
+    if(year[i, ]$TMEAN > temp.c & i >= sg[1]) {
+      data.0c[3] <- year[i, ]$Year
+      data.0c[2] <- year[i, ]$Month
+      data.0c[1] <- year[i, ]$Day
+      return(data.0c)
+    }
+  }
+  stop("В вечной мерзлоте деревья не растут. Проверьте климатику.")
+}
+STDAT0(Minusinsk.cli, schc, 1965)
+STDAT0(Minusinsk.cli, schc, 1965, 5) # Дата перехода через 5C в начале сезона роста STDAT5
+```
+
+```{r fdat0}
+# Дата перехода в конце сезона через 0C-5C
+FDAT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  sg <- season_growth(data.calc, s.year)
+  data.0c <- c(1, 1, 1)
+  for(i in sort(1: length(year[, 1]), decreasing = TRUE)) {
+    if(year[i, ]$TMEAN >= temp.c & i <= sg[2]) {
+      data.0c[3] <- year[i, ]$Year
+      data.0c[2] <- year[i, ]$Month
+      data.0c[1] <- year[i, ]$Day
+      return(data.0c)
+    }
+  }
+  stop("В вечной мерзлоте деревья не растут. Проверьте климатику.")
+}
+FDAT0(Minusinsk.cli, schc, 1965)
+FDAT0(Minusinsk.cli, schc, 1965, 5)
 ```
 
 ```{r sumprec}
@@ -223,3 +277,16 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 <https://glvrd.ru>
 <http://www.bioclass.ru/files/R_0_3.pdf>
+
+
+
+read 
+http://distrland.blogspot.ru/2016/05/ggplot2_21.html#more
+http://distrland.blogspot.ru/2016/05/ggplot2.html#more
+http://distrland.blogspot.ru/2016/04/k-k-nearest-neighbors-r.html#more
+http://distrland.blogspot.ru/2016/03/ggplot2.html#more
+http://distrland.blogspot.ru/2016/02/r-8-yahoo-r.html#more
+http://distrland.blogspot.ru/2015/02/r.html#more
+http://distrland.blogspot.ru/2014/12/excel-r.html#more
+http://distrland.blogspot.ru/2014/12/r.html#more
+
