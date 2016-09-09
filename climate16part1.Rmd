@@ -9,6 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## Очистка памяти 
+
 ```{r clear_all}
 rm(list=ls()); cat("\014")
 ```
@@ -32,7 +34,7 @@ schc$EG1-schc$BG1
 ```
 
 ## Чтение размеров клеток по деревьям и годам (малая минуса)
-  + кластеризация на три кластера
+  + таблица с данными кластеризованна на три кластера
 
 ```{r read_cells_datasets}
 
@@ -126,8 +128,7 @@ Y <- X*sin(3*X) + 2*randn(size(X))
 g1 <- qplot(x = X, y = Y[1,], geom = "point")
 g1
 ```
-
-
+## Служебные функции
 ```{r getyear}
 get_one_year <- function(years, now) {
   #
@@ -141,22 +142,15 @@ season_growth <- function(sgs, s.year) {
 }
 S64 <- season_growth(schc, 1964)
 ```
-
 ## Для каждого года были рассчитаны 16 климатических характеристик (Табл. 2.7.1), что позволило охарактеризовать каждый сезон роста 16-мерным вектором.
 
+  + Климатические характеристики, рассчитанные по ежедневным данным температуры и осадков по метеостанции в районе
+
+<http://www.inp.nsk.su/~baldin/DataAnalysis/R/R-03-datatype.pdf>
+<http://www.stat.berkeley.edu/classes/s133/dates.html>
+<http://www.statmethods.net/advstats/timeseries.html>
 ```{r calculated_climatic_characteristics}
-# Климатические характеристики, рассчитанные по ежедневным данным температуры и осадков по метеостанции в районе
-# http://www.inp.nsk.su/~baldin/DataAnalysis/R/R-03-datatype.pdf
-# http://www.stat.berkeley.edu/classes/s133/dates.html
-# http://www.statmethods.net/advstats/timeseries.html
 
-
- 
-
-# Сумма температур больше 0C
-SUMT0 <- 
-# Сумма температур больше 5C
-SUMT5 <- 
 # Сумма температур выше 0C до 22 июня
 T220 <- 
 # Сумма температур выше 5C до 22 июня
@@ -167,8 +161,34 @@ FT220 <-
 FT225 <- 
 # Скорость подъема температуры
 SPEEDT <- 
- 
 
+```
+## 
+```{r SUMT12C}
+# функция преобразующая дату в количество дней с начала года
+num_days <- function(year, month, day) {
+  D1 <- as.Date(paste(year, "-1-1", sep = ""))
+  asd <- as.Date(paste(year, "-", month, "-", day, sep = ""))
+  return(as.numeric(difftime(asd, D1, units = "day")))
+}
+num_days(1964, 6, 22)
+```
+
+``` {r SUMT0}
+# Сумма температур больше 0C - Сумма температур больше 5C
+SUMT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  sum_temp <- 0
+  for(i in 1: length(year[, 1])) {
+    if(year[i, ]$TMEAN > temp.c) {
+      sum_temp <- sum_temp + year[i, ]$TMEAN
+    }
+  }
+  return(sum_temp)
+}
+# test
+sum_temp <- SUMT0(Minusinsk.cli, schc, 1965, 0); sum_temp
+sum_temp <- SUMT0(Minusinsk.cli, schc, 1965, 5); sum_temp
 ```
 
 ```{r inter0}
