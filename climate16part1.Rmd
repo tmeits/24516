@@ -151,17 +151,29 @@ S64 <- season_growth(schc, 1964)
 <http://www.statmethods.net/advstats/timeseries.html>
 ```{r calculated_climatic_characteristics}
 
-# Сумма температур выше 0C до 22 июня
-T220 <- 
-# Сумма температур выше 5C до 22 июня
-T225 <- 
-# Сумма температур от 22 июня до перехода через 0C в конце сезона
-FT220 <- 
-# Сумма температур от 22 июня до перехода через 5C в конце сезона
-FT225 <- 
 # Скорость подъема температуры
-SPEEDT <- 
+SPEEDT <- function (data.cli, data.calc, s.year) {
+  
+}
 
+```
+##
+```{r FT2205}
+# Сумма температур от 22 июня до перехода через 0C в конце сезона/Сумма температур от 22 июня до перехода через 5C в конце сезона
+FT2205 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  sg   <- season_growth(data.calc, s.year)
+  nd <- num_days(s.year, 6, 22)
+  sum_temp <- 0
+  for(i in nd: sg[2]) {
+    if(year[i, ]$TMEAN > temp.c) {
+      sum_temp <- sum_temp + year[i, ]$TMEAN
+    }
+  }
+  return(sum_temp)
+}
+sum_temp <- FT2205(Minusinsk.cli, schc, 1965, 0); sum_temp
+sum_temp <- FT2205(Minusinsk.cli, schc, 1965, 5); sum_temp
 ```
 ## 
 ```{r SUMT12C}
@@ -173,8 +185,25 @@ num_days <- function(year, month, day) {
 }
 num_days(1964, 6, 22)
 ```
-
-``` {r SUMT0}
+##
+```{r T2205}
+# Сумма температур выше 0C до 22 июня/Сумма температур выше 5C до 22 июня
+T2205 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  nd <- num_days(s.year, 6, 22)
+  sum_temp <- 0
+  for(i in 1: nd) {
+    if(year[i, ]$TMEAN > temp.c) {
+      sum_temp <- sum_temp + year[i, ]$TMEAN
+    }
+  }
+  return(sum_temp)
+}
+sum_temp <- T2205(Minusinsk.cli, schc, 1965, 0); sum_temp
+sum_temp <- T2205(Minusinsk.cli, schc, 1965, 5); sum_temp
+```
+## 
+```{r SUMT0}
 # Сумма температур больше 0C - Сумма температур больше 5C
 SUMT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
   year <- get_one_year(data.cli, s.year)
