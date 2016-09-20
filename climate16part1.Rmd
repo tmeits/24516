@@ -186,12 +186,23 @@ num_days <- function(year, month, day) {
 }
 num_days(1964, 6, 22)
 ```
+#### Преобразование вектора Год-Месяц-День в строку пригодную для обратного преобразования
+```{r date2string}
+date2string <- function(cDate) {
+  sD <- paste(cDate[1], "-", cDate[2], "-", cDate[3], sep = "") #; print(sD)
+  D  <- as.Date(sD) # при неправильной дате выбросится исключение
+  return(sD)
+}
+date2string(c(2007,11,11))
+
+```
 
 #### Сумма температур от 22 июня до перехода через 0C в конце сезона/Сумма температур от 22 июня до перехода через 5C в конце сезона
 ```{r FT2205}
 # Сумма температур от 22 июня до перехода через 0C в конце сезона/Сумма температур от 22 июня до перехода через 5C в конце сезона
 FT2205 <- function (data.cli, data.calc, s.year, temp.c = 0) {
   year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
   sg   <- season_growth(data.calc, s.year)
   nd <- num_days(s.year, 6, 22)
   sum_temp <- 0
@@ -211,6 +222,7 @@ sum_temp <- FT2205(Minusinsk.cli, schc, 1965, 5); sum_temp
 # Сумма температур выше 0C до 22 июня/Сумма температур выше 5C до 22 июня
 T2205 <- function (data.cli, data.calc, s.year, temp.c = 0) {
   year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
   nd <- num_days(s.year, 6, 22)
   sum_temp <- 0
   for(i in 1: nd) {
@@ -229,6 +241,7 @@ sum_temp <- T2205(Minusinsk.cli, schc, 1965, 5); sum_temp
 # Сумма температур больше 0C - Сумма температур больше 5C
 SUMT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
   year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
   sum_temp <- 0
   for(i in 1: length(year[, 1])) {
     if(year[i, ]$TMEAN > temp.c) {
@@ -238,8 +251,8 @@ SUMT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
   return(sum_temp)
 }
 # test
-sum_temp <- SUMT0(Minusinsk.cli, schc, 1965, 0); sum_temp
-sum_temp <- SUMT0(Minusinsk.cli, schc, 1965, 5); sum_temp
+sum_temp <- SUMT0(Minusinsk.cli, schc, 1963, 0); sum_temp
+sum_temp <- SUMT0(Minusinsk.cli, schc, 1963, 5); sum_temp
 ```
 
 #### Дата перехода через 0C-5C в начале сезона роста
@@ -247,10 +260,11 @@ sum_temp <- SUMT0(Minusinsk.cli, schc, 1965, 5); sum_temp
 # Дата перехода через 0C-5C в начале сезона роста
 STDAT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
   year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
   sg <- season_growth(data.calc, s.year)
   data.0c <- c(1, 1, 1)
   for(i in 1: length(year[, 1])) {
-    if(year[i, ]$TMEAN > temp.c & i >= sg[1]) {
+    if(year[i, ]$TMEAN >= temp.c & i >= sg[1]) {
       data.0c[3] <- year[i, ]$Year
       data.0c[2] <- year[i, ]$Month
       data.0c[1] <- year[i, ]$Day
@@ -259,14 +273,15 @@ STDAT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
   }
   stop("В вечной мерзлоте деревья не растут. Проверьте климатику.")
 }
-STDAT0(Minusinsk.cli, schc, 1965)
-STDAT0(Minusinsk.cli, schc, 1965, 5) # Дата перехода через 5C в начале сезона роста STDAT5
+STDAT0(Minusinsk.cli, schc, 1969)
+STDAT0(Minusinsk.cli, schc, 1969, temp.c = 11) # Дата перехода через 5C в начале сезона роста STDAT5
 ```
 #### Дата перехода в конце сезона через 0C-5C
 ```{r fdat0}
 # Дата перехода в конце сезона через 0C-5C
 FDAT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
   year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
   sg <- season_growth(data.calc, s.year)
   data.0c <- c(1, 1, 1)
   for(i in sort(1: length(year[, 1]), decreasing = TRUE)) {
@@ -279,8 +294,8 @@ FDAT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
   }
   stop("В вечной мерзлоте деревья не растут. Проверьте климатику.")
 }
-FDAT0(Minusinsk.cli, schc, 1965)
-FDAT0(Minusinsk.cli, schc, 1965, 5)
+FDAT0(Minusinsk.cli, schc, 1969)
+FDAT0(Minusinsk.cli, schc, 1969, 5)
 ```
 #### Длительность сезона от 0C до 0C или от 5C до 5C
 ```{r inter0}
@@ -302,8 +317,9 @@ INTER0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
   # https://journal.r-project.org/archive/2011-1/RJournal_2011-1_Chalabi~et~al.pdf
   return(days)
 }
-INTER0(Minusinsk.cli, schc, 1965, 0)
-INTER0(Minusinsk.cli, schc, 1969, 5)
+I <- INTER0(Minusinsk.cli, schc, 1965, 0); I
+I <- INTER0(Minusinsk.cli, schc, 1966, 0); I
+I <- INTER0(Minusinsk.cli, schc, 1969, 5); I
 
 ```
 #### Сумма осадков в течение сезона роста
@@ -315,7 +331,7 @@ SUMPREC <- function (data.cli, data.calc, s.year) {
   print(sg)
   return(sum(new.year$PRECIP[sg[1]: sg[2]]))
 }
-SUMPREC(Minusinsk.cli, schc, 1964)
+sum.prec <- SUMPREC(Minusinsk.cli, schc, 1964); sum.prec
 ```
 #### Максимум температуры
 ```{r maxtemp}
@@ -332,6 +348,7 @@ MDAT <- function(data.cli, s.year) {
   temp.max <- -99
   data.max <- c(1, 1, 1)
   year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
   for(i in 1: length(year[, 1])) {
     if(year[i, ]$TMAX > temp.max) {
       temp.max <- year[i, ]$TMAX
@@ -340,9 +357,71 @@ MDAT <- function(data.cli, s.year) {
       data.max[1] <- year[i, ]$Day
     }
   }
-  return(list(data.max, temp.max))
+  #return(list(data.max, temp.max))
+  return(data.max)
 }
-MDAT(Minusinsk.cli, 1964)
+MD <- MDAT(Minusinsk.cli, 1964); MD; date2string(MD)
+```
+### Климатические характеристики, рассчитанные по ежедневным данным температуры и осадков
+```{r EVAL16CLIPARS}
+# Климатические характеристики, рассчитанные по ежедневным данным температуры и осадков
+EVAL16CLIPARS <- function(data.cli, data.calc) {
+  l <- length(data.calc[, 1]) # вычисление количества наблюдений
+  # создание матрицы из l строк и 16 столбцов
+  m16 <- matrix(c(1: (l*16)), nrow = l, ncol = 16, byrow = TRUE)
+  m16.df <- as.data.frame(m16) # преобразуем в датафрэйм
+  # присваиваем названия столбцам
+  df16 <- setNames(m16.df, 
+                   c("STDAT0", "STDAT5", "FDAT0", "FDAT5", "INTER0", "INTER5", "MAXT", 
+                     "MDAT", "SUMT0", "SUMT5", "T220", "T225", "FT220", "FT225", "SPEEDT", "SUMPREC"))
+  # задача определить тип данных каждого столбца
+  df16$STDAT0 <- as.character(df16$STDAT0)
+  df16$STDAT5 <- as.character(df16$STDAT5)
+  df16$FDAT0  <- as.character(df16$FDAT0)
+  df16$FDAT5  <- as.character(df16$FDAT5)
+  df16$MDAT   <- as.array(df16$MDAT)
+  
+  for(i in 1: l) {
+    # 1 Дата перехода через 0C в начале сезона роста STDAT0
+    D <- STDAT0(data.cli, data.calc, data.calc$year[i]);
+    df16$STDAT0[i] <- date2string(D);
+    # 2 Дата перехода через 5C в начале сезона роста STDAT5
+    D <- STDAT0(data.cli, data.calc, data.calc$year[i], 11);
+    df16$STDAT5[i] <- date2string(D);
+    # Дата перехода в конце сезона через 0 - 5
+    D <- FDAT0(data.cli, data.calc, data.calc$year[i])
+    df16$FDAT0[i] <- date2string(D);
+    D <- FDAT0(data.cli, data.calc, data.calc$year[i], 5)
+    df16$FDAT5[i] <- date2string(D);
+    # Максимум температуры
+    df16$MAXT[i] <- MAXT(data.cli, data.calc$year[i]) 
+    # Дата достижения максимума температуры
+    D <- MDAT(data.cli, data.calc$year[i])
+    df16$MDAT[i] <- date2string(D);
+    # Длительность сезона от 0C до 0C, 5C до 5C
+    SL <- INTER0(data.cli, data.calc, data.calc$year[i]); df16$INTER0[i] <- SL
+    df16$INTER5[i] <- INTER0(data.cli, data.calc, data.calc$year[i], temp.c = 5);
+    # Сумма температур больше 0C, 5C
+    df16$SUMT0[i] <- SUMT0(data.cli, data.calc, data.calc$year[i])
+    df16$SUMT5[i] <- SUMT0(data.cli, data.calc, data.calc$year[i], 5)
+    # Сумма температур выше 0C-5C до 22 июня
+    df16$T220[i] <- T2205(data.cli, data.calc, data.calc$year[i])
+    df16$T225[i] <- T2205(data.cli, data.calc, data.calc$year[i], 5)
+  }
+  
+  
+  # сохраняем расчетную таблицу в файл
+  
+  # возвращаем расчетную таблицу из функции
+  return(df16)
+}
+
+E <- EVAL16CLIPARS(Minusinsk.cli, schc)
+
+```
+Климатические параметры сопоставлялись с данными по клеточной структуре годичных колец лиственницы (Larix cajanderi, Mayr.), произрастающей в районе нижнего течения р. Индигирки (690 27’-700 30’ с.ш., 1480 07’-1500 27’ в.д.).
+
+```{r patequ}
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
