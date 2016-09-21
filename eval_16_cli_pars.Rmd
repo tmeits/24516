@@ -1,0 +1,451 @@
+---
+title: "Пример использования метода главных компонент и дискриминантного анализа для реконструкции термических характеристик сезона роста по клеточным измерениям годичных колец."
+author: "Iljin Victor"
+date: '26 августа 2016 г '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Очистка памяти для новой сессии
+
+```{r clear_all}
+clear_all <- function() {
+  rm(list=ls()); cat("\014") # очистка локальной области видимости
+  print(ls())
+}
+clear_all()
+rm(list=ls()); cat("\014")
+```
+
+#### Установка абсолютного пути к рабочей директории
+```{r set_work_dir}
+getworkdir <- function(){
+  if(R.version$os == "linux-gnu"){ 
+    return('/home/larisa/Dropbox/24516/')
+  } 
+  return('C:/Users/IVA/Dropbox/24516/')
+}
+mm_path <- getworkdir()
+
+setwd(mm_path)
+```
+
+#### Чтения файла с данными VS-model
+  + BG1 and EG1 (начало и конец сезона роста от Маргариты)
+  + Построение графика
+```{r read_and_plot}
+schc <- read.csv(paste(getworkdir(), '1936_2009.dat', sep = ''), 
+                 header = TRUE, sep = "", dec = ".")
+
+head(schc); str(schc)
+
+plot(schc$year, schc$BG1, col = "red", ylim = c(90, 300), ylab = "day", xlab = "year")
+lines(schc$year, schc$BG1, col = "red", type = "l")
+lines(schc$year, schc$EG1, col = "blue",type = "p")
+lines(schc$year, schc$EG1, col = "blue",type = "l")
+
+schc$EG1-schc$BG1
+```
+
+#### Чтение размеров клеток по деревьям и годам (малая минуса)
+  + таблица с данными кластеризованна на три кластера
+  <>
+
+```{r read_cells_datasets}
+sm <- read.csv(paste(mm_path, 'small_minusa_lda_sep_3.csv', sep = ''), 
+               header = TRUE, sep = ";", dec = ",") # Pinus sylvestris L.
+# Округлим результаты для лучшего восприятия данных
+sm_round <- round(sm, digits = 2)
+head(sm_round)
+```
+#### Чтение данных из датасета участка Малая Минуса и климатических данных участка Малая Минуса
+* Работаем с метеоданными <http://aisori.meteo.ru/ClimateR> в [R]
+* Конвертируем данные метеостанции 29866 53.42N 91.42E по температуре для работы в data.frame [R] 
+  + Удаляем качество замера
+  + Присваиваем столбцам наименования
+  + Разделяем по разным таблицам метеостанцию Minusinsk.cli и Hakasskaja.cli 
+
+```{r read_cli_datasets}
+sm.cli <- read.csv(paste(mm_path, 'cli/SCH231.txt', sep = ''), 
+                   header = FALSE, sep = ";", dec = ".") # Climate
+sm.cli <- sm.cli[-c(5, 7, 9, 11, 13, 14)] # Удаляем лишние столбцы
+sm.cli <- setNames(sm.cli, c("Station", "Year", "Month", "Day",  'TMIN','TMEAN','TMAX','PRECIP'))
+# 53.42N 91.42E
+Minusinsk.cli <- sm.cli[sm.cli$Station == 29866, ]
+# 53.46N 91.19E 
+Hakasskaja.cli <- sm.cli[sm.cli$Station == 29862, ]
+
+Minusinsk.cli.1964.2013 <- Minusinsk.cli[
+  (Minusinsk.cli$Year >= 1964) & (Minusinsk.cli$Year <= 2013), ]
+
+head(Minusinsk.cli.1964.2013); str(Minusinsk.cli.1964.2013)
+
+rm(sm.cli, Hakasskaja.cli, Minusinsk.cli.1964.2013)
+```
+
+## Исходные температурные данные сглаживались при помощи метода скользящих средних с окном в 43 дня.
+
+Подобного рода сглаживание проводилось с целью избавления от «случайных» температурных флуктуаций. При дальнейшем увеличении окна внутренняя корреляционная структура полученных характеристик по годам не меняется.
+
+<http://r-analytics.blogspot.ru/2012/09/blog-post_6280.html#.V4WLmPuLYbe>
+<http://www.inside-r.org/packages/cran/pracma/docs/movavg>
+
+```{r temperature_smoothed}
+# > install.packages("pracma")
+# http://matlab.exponenta.ru/curvefitting/3_10.php
+#library(pracma)
+source(paste(mm_path, "movavg.R", sep = ''))
+source(paste(mm_path, "rand.R", sep = ''))
+source(paste(mm_path, "size.R", sep = ''))
+# lsb_release -a
+# https://cran.r-project.org/bin/linux/ubuntu/
+# синтетический тест
+X <- seq(0,5, by = 0.005); length(X)
+Y <- X*sin(3*X) + 2*randn(size(X))
+plot(X, Y, col = "blue")
+T <- movavg(Y, 33, type = "t")
+T2 <- movavg(Y, 191, type = "t")
+lines(X, T, col = "red", lwd = "3")
+lines(X, T2, col = "green", lwd = "3")
+grid(NA, 5, lwd = 2)
+lines(lowess(X, Y, f=0.05, iter = 4, delta = 0.01 * diff(range(X))), 
+        lwd = 5, col = "black")
+```
+
+```{r synt}
+# > install.packages("pracma")
+# http://matlab.exponenta.ru/curvefitting/3_10.php
+#library(pracma)
+source(paste(mm_path, "movavg.R", sep = ''))
+source(paste(mm_path, "rand.R", sep = ''))
+source(paste(mm_path, "size.R", sep = ''))
+# lsb_release -a
+# https://cran.r-project.org/bin/linux/ubuntu/
+# синтетический тест
+X <- seq(0,5, by = 0.0003); length(X)
+Y <- X*sin(3*X) + 2*randn(size(X))
+plot(X, Y, col = "blue")
+T <- movavg(Y, 33, type = "t")
+T2 <- movavg(Y, 191, type = "t")
+lines(X, T, col = "red", lwd = "3")
+lines(X, T2, col = "green", lwd = "3")
+grid(NA, 5, lwd = 2)
+lines(lowess(X, Y, f=0.05, iter = 4, delta = 0.01 * diff(range(X))), 
+        lwd = 5, col = "grey")
+```
+
+```{r ggplot2, eval=FALSE, include=FALSE}
+# install.packages("ggplot2")
+# http://qsar4u.com/files/rintro/06.html
+# https://gist.github.com/aa989190f363e46d/e65b46dcba8874a202fe
+require(ggplot2)
+X <- seq(0,5, by = 0.001); length(X)
+Y <- X*sin(3*X) + 2*randn(size(X))
+g1 <- qplot(x = X, y = Y[1,], geom = "point")
+g1
+```
+#### Служебные функции
+```{r getyear}
+get_one_year <- function(years, now) {
+  # Чтение климатических данных за один год
+  return(years[years$Year == now, ])
+}
+Y64 <- get_one_year(Minusinsk.cli, 1964)
+
+season_growth <- function(sgs, s.year) {
+  # Чтение из результатов VS-model значений начала и конца сезона роста по всем мод. годам
+  return(c(sgs[sgs$year == s.year, ]$BG1, sgs[sgs$year == s.year, ]$EG1))
+}
+S64 <- season_growth(schc, 1964)
+```
+#### Для каждого года составленны функции для рассчета 16 климатических характеристик 
+  + Это позволило охарактеризовать каждый сезон роста 16-мерным вектором (Шишов В.В. табл. 2.7.1, глава 2)
+  + Климатические характеристики, рассчитанные по ежедневным данным температуры и осадков по метеостанции в районе
+
+<http://www.inp.nsk.su/~baldin/DataAnalysis/R/R-03-datatype.pdf>
+<http://www.stat.berkeley.edu/classes/s133/dates.html>
+<http://www.statmethods.net/advstats/timeseries.html>
+<https://lib.ipae.uran.ru/dchrono/>
+```{r calculated_climatic_characteristics}
+
+# Скорость подъема температуры
+SPEEDT <- function (data.cli, data.calc, s.year) {
+  return(1) # Градусов цельция в год?
+}
+SPEEDT(Minusinsk.cli, schc, 1965)
+```
+
+#### функция преобразующая дату в количество дней с начала года
+```{r SUMT12C}
+# функция преобразующая дату в количество дней с начала года
+num_days <- function(year, month, day) {
+  D1 <- as.Date(paste(year, "-1-1", sep = ""))
+  asd <- as.Date(paste(year, "-", month, "-", day, sep = ""))
+  return(as.numeric(difftime(asd, D1, units = "day")))
+}
+num_days(1964, 6, 22)
+```
+#### Преобразование вектора Год-Месяц-День в строку пригодную для обратного преобразования
+```{r date2string}
+date2string <- function(cDate) {
+  sD <- paste(cDate[1], "-", cDate[2], "-", cDate[3], sep = "") #; print(sD)
+  D  <- as.Date(sD) # при неправильной дате выбросится исключение
+  return(sD)
+}
+date2string(c(2007,11,11))
+
+```
+
+#### Сумма температур от 22 июня до перехода через 0C в конце сезона/Сумма температур от 22 июня до перехода через 5C в конце сезона
+```{r FT2205}
+# Сумма температур от 22 июня до перехода через 0C в конце сезона/Сумма температур от 22 июня до перехода через 5C в конце сезона
+FT2205 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
+  sg   <- season_growth(data.calc, s.year)
+  nd <- num_days(s.year, 6, 22)
+  sum_temp <- 0
+  for(i in nd: sg[2]) {
+    if(year[i, ]$TMEAN > temp.c) {
+      sum_temp <- sum_temp + year[i, ]$TMEAN
+    }
+  }
+  return(sum_temp)
+}
+sum_temp <- FT2205(Minusinsk.cli, schc, 1965, 0); sum_temp
+sum_temp <- FT2205(Minusinsk.cli, schc, 1965, 5); sum_temp
+```
+
+#### Сумма температур выше 0C до 22 июня/Сумма температур выше 5C до 22 июня
+```{r T2205}
+# Сумма температур выше 0C до 22 июня/Сумма температур выше 5C до 22 июня
+T2205 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
+  nd <- num_days(s.year, 6, 22)
+  sum_temp <- 0
+  for(i in 1: nd) {
+    if(year[i, ]$TMEAN > temp.c) {
+      sum_temp <- sum_temp + year[i, ]$TMEAN
+    }
+  }
+  return(sum_temp)
+}
+sum_temp <- T2205(Minusinsk.cli, schc, 1965, 0); sum_temp
+sum_temp <- T2205(Minusinsk.cli, schc, 1965, 5); sum_temp
+```
+####  Сумма температур больше 0C - Сумма температур больше 5C
+
+```{r SUMT0}
+# Сумма температур больше 0C - Сумма температур больше 5C
+SUMT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
+  sum_temp <- 0
+  for(i in 1: length(year[, 1])) {
+    if(year[i, ]$TMEAN > temp.c) {
+      sum_temp <- sum_temp + year[i, ]$TMEAN
+    }
+  }
+  return(sum_temp)
+}
+# test
+sum_temp <- SUMT0(Minusinsk.cli, schc, 1963, 0); sum_temp
+sum_temp <- SUMT0(Minusinsk.cli, schc, 1963, 5); sum_temp
+```
+
+#### Дата перехода через 0C-5C в начале сезона роста
+```{r stdat0}
+# Дата перехода через 0C-5C в начале сезона роста
+STDAT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
+  sg <- season_growth(data.calc, s.year)
+  data.0c <- c(1, 1, 1)
+  for(i in 1: length(year[, 1])) {
+    if(year[i, ]$TMEAN >= temp.c & i >= sg[1]) {
+      data.0c[3] <- year[i, ]$Year
+      data.0c[2] <- year[i, ]$Month
+      data.0c[1] <- year[i, ]$Day
+      return(data.0c)
+    }
+  }
+  stop("В вечной мерзлоте деревья не растут. Проверьте климатику.")
+}
+STDAT0(Minusinsk.cli, schc, 1969)
+STDAT0(Minusinsk.cli, schc, 1969, temp.c = 11) # Дата перехода через 5C в начале сезона роста STDAT5
+```
+#### Дата перехода в конце сезона через 0C-5C
+```{r fdat0}
+# Дата перехода в конце сезона через 0C-5C
+FDAT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
+  sg <- season_growth(data.calc, s.year)
+  data.0c <- c(1, 1, 1)
+  for(i in sort(1: length(year[, 1]), decreasing = TRUE)) {
+    if(year[i, ]$TMEAN >= temp.c & i <= sg[2]) {
+      data.0c[3] <- year[i, ]$Year
+      data.0c[2] <- year[i, ]$Month
+      data.0c[1] <- year[i, ]$Day
+      return(data.0c)
+    }
+  }
+  stop("В вечной мерзлоте деревья не растут. Проверьте климатику.")
+}
+FDAT0(Minusinsk.cli, schc, 1969)
+FDAT0(Minusinsk.cli, schc, 1969, 5)
+```
+#### Длительность сезона от 0C до 0C или от 5C до 5C
+```{r inter0}
+# Длительность сезона от 0C до 0C или от 5C до 5C
+INTER0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  sg   <- season_growth(data.calc, s.year)
+  lbeg <- STDAT0(data.cli, data.calc, s.year, temp.c)
+  lend <- FDAT0(data.cli, data.calc, s.year, temp.c)
+
+  startdate <- as.Date(paste(as.character(lbeg[3]), "-", as.character(lbeg[2]), "-",
+                      as.character(lbeg[1]), sep = ''))
+  enddate   <- as.Date(paste(as.character(lend[3]), "-", as.character(lend[2]), "-",
+                      as.character(lend[1]), sep = ''))
+  # http://distrland.blogspot.ru/2015/04/r-2-date-base-r.html
+  days      <- as.numeric(difftime(enddate , startdate, units = "day"))
+  
+  # install.packages("timeDate")
+  # https://journal.r-project.org/archive/2011-1/RJournal_2011-1_Chalabi~et~al.pdf
+  return(days)
+}
+I <- INTER0(Minusinsk.cli, schc, 1965, 0); I
+I <- INTER0(Minusinsk.cli, schc, 1966, 0); I
+I <- INTER0(Minusinsk.cli, schc, 1969, 5); I
+
+```
+#### Сумма осадков в течение сезона роста
+```{r sumprec}
+# Сумма осадков в течение сезона роста
+SUMPREC <- function (data.cli, data.calc, s.year) {
+  new.year <- na.omit(get_one_year(data.cli, s.year))
+  sg <- season_growth(data.calc, s.year)
+  # print(sg)
+  return(sum(new.year$PRECIP[sg[1]: sg[2]]))
+}
+sum.prec <- SUMPREC(Minusinsk.cli, schc, 1964); sum.prec
+```
+#### Максимум температуры
+```{r maxtemp}
+# Максимум температуры
+MAXT <- function(data.cli, s.year) {
+  return(max(data.cli[data.cli$Year == s.year, ]$TMAX))
+}
+MAXT(Minusinsk.cli, 1964); MAXT(Minusinsk.cli, 1996)
+```
+#### Дата достижения максимума температуры
+```{r datemax}
+# Дата достижения максимума температуры
+MDAT <- function(data.cli, s.year) {
+  temp.max <- -99
+  data.max <- c(1, 1, 1)
+  year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
+  for(i in 1: length(year[, 1])) {
+    if(year[i, ]$TMAX > temp.max) {
+      temp.max <- year[i, ]$TMAX
+      data.max[3] <- year[i, ]$Year
+      data.max[2] <- year[i, ]$Month
+      data.max[1] <- year[i, ]$Day
+    }
+  }
+  #return(list(data.max, temp.max))
+  return(data.max)
+}
+MD <- MDAT(Minusinsk.cli, 1964); MD; date2string(MD)
+```
+### Климатические характеристики, рассчитанные по ежедневным данным температуры и осадков
+```{r EVAL16CLIPARS}
+# Климатические характеристики, рассчитанные по ежедневным данным температуры и осадков
+EVAL16CLIPARS <- function(data.cli, data.calc) {
+  l <- length(data.calc[, 1]) # вычисление количества наблюдений
+  # создание матрицы из l строк и 16 столбцов
+  m16 <- matrix(c(1: (l*16)), nrow = l, ncol = 16, byrow = TRUE)
+  m16.df <- as.data.frame(m16) # преобразуем в датафрэйм
+  # присваиваем названия столбцам
+  df16 <- setNames(m16.df, 
+                   c("STDAT0", "STDAT5", "FDAT0", "FDAT5", "INTER0", "INTER5", "MAXT", 
+                     "MDAT", "SUMT0", "SUMT5", "T220", "T225", "FT220", "FT225", "SPEEDT", "SUMPREC"))
+  # задача определить тип данных каждого столбца
+  df16$STDAT0 <- as.character(df16$STDAT0)
+  df16$STDAT5 <- as.character(df16$STDAT5)
+  df16$FDAT0  <- as.character(df16$FDAT0)
+  df16$FDAT5  <- as.character(df16$FDAT5)
+  df16$MDAT   <- as.array(df16$MDAT)
+  
+  for(i in 1: l) {
+    # 1 Дата перехода через 0C в начале сезона роста STDAT0
+    D <- STDAT0(data.cli, data.calc, data.calc$year[i]);
+    df16$STDAT0[i] <- date2string(D);
+    # 2 Дата перехода через 5C в начале сезона роста STDAT5
+    D <- STDAT0(data.cli, data.calc, data.calc$year[i], 11);
+    df16$STDAT5[i] <- date2string(D);
+    # Дата перехода в конце сезона через 0 - 5
+    D <- FDAT0(data.cli, data.calc, data.calc$year[i])
+    df16$FDAT0[i] <- date2string(D);
+    D <- FDAT0(data.cli, data.calc, data.calc$year[i], 5)
+    df16$FDAT5[i] <- date2string(D);
+    # Максимум температуры
+    df16$MAXT[i] <- MAXT(data.cli, data.calc$year[i]) 
+    # Дата достижения максимума температуры
+    D <- MDAT(data.cli, data.calc$year[i])
+    df16$MDAT[i] <- date2string(D);
+    # Длительность сезона от 0C до 0C, 5C до 5C
+    SL <- INTER0(data.cli, data.calc, data.calc$year[i]); df16$INTER0[i] <- SL
+    df16$INTER5[i] <- INTER0(data.cli, data.calc, data.calc$year[i], temp.c = 5);
+    # Сумма температур больше 0C, 5C
+    df16$SUMT0[i] <- SUMT0(data.cli, data.calc, data.calc$year[i])
+    df16$SUMT5[i] <- SUMT0(data.cli, data.calc, data.calc$year[i], 5)
+    # Сумма температур выше 0C-5C до 22 июня
+    df16$T220[i] <- T2205(data.cli, data.calc, data.calc$year[i])
+    df16$T225[i] <- T2205(data.cli, data.calc, data.calc$year[i], 5)
+    # Сумма температур от 22 июня до перехода через 0о в конце сезона
+    df16$FT220[i] <- FT2205(data.cli, data.calc, data.calc$year[i])
+    df16$FT225[i] <- FT2205(data.cli, data.calc, data.calc$year[i], temp.c = 5)
+    # Скорость подъема температуры
+    df16$SPEEDT[i] <- SPEEDT(data.cli, data.calc, data.calc$year[i])
+    # Сумма осадков в течение сезона роста
+    df16$SUMPREC[i] <- SUMPREC(data.cli, data.calc, data.calc$year[i])
+  }
+  
+  
+  # сохраняем расчетную таблицу в файл
+  
+  # возвращаем расчетную таблицу из функции
+  return(df16)
+}
+
+E <- EVAL16CLIPARS(Minusinsk.cli, schc)
+str(E)
+head(E)
+
+```
+Климатические параметры сопоставлялись с данными по клеточной структуре годичных колец лиственницы (Larix cajanderi, Mayr.), произрастающей в районе нижнего течения р. Индигирки (690 27’-700 30’ с.ш., 1480 07’-1500 27’ в.д.).
+
+```{r patequ}
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+<https://glvrd.ru>
+<http://www.bioclass.ru/files/R_0_3.pdf>
+
+read 
+<http://distrland.blogspot.ru/2016/05/ggplot2_21.html#more>
+<http://distrland.blogspot.ru/2016/05/ggplot2.html#more>
+<http://distrland.blogspot.ru/2016/04/k-k-nearest-neighbors-r.html#more>
+<http://distrland.blogspot.ru/2016/03/ggplot2.html#more>
+<http://distrland.blogspot.ru/2016/02/r-8-yahoo-r.html#more>
+<http://distrland.blogspot.ru/2015/02/r.html#more>
+<http://distrland.blogspot.ru/2014/12/excel-r.html#more>
+<http://distrland.blogspot.ru/2014/12/r.html#more>
