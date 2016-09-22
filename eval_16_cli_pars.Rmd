@@ -13,41 +13,48 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r clear_all}
 clear_all <- function() {
-  rm(list=ls()); cat("\014") # очистка локальной области видимости
-  print(ls())
+    rm(list = ls())
+    cat("\f")  # очистка локальной области видимости
+    print(ls())
 }
 clear_all()
-rm(list=ls()); cat("\014")
-```
+rm(list = ls())
+cat("\f")
 
+```
 #### Установка абсолютного пути к рабочей директории
 ```{r set_work_dir}
-getworkdir <- function(){
-  if(R.version$os == "linux-gnu"){ 
-    return('/home/larisa/Dropbox/24516/')
-  } 
-  return('C:/Users/IVA/Dropbox/24516/')
+getworkdir <- function() {
+    if (R.version$os == "linux-gnu") {
+        return("/home/larisa/Dropbox/24516/")
+    }
+    return("C:/Users/IVA/Dropbox/24516/")
 }
 mm_path <- getworkdir()
 
 setwd(mm_path)
+
 ```
 
 #### Чтения файла с данными VS-model
   + BG1 and EG1 (начало и конец сезона роста от Маргариты)
   + Построение графика
 ```{r read_and_plot}
-schc <- read.csv(paste(getworkdir(), '1936_2009.dat', sep = ''), 
-                 header = TRUE, sep = "", dec = ".")
+schc <- read.csv(paste(getworkdir(), "1936_2009.dat", sep = ""), header = TRUE, sep = "", dec = ".")
 
-head(schc); str(schc)
+head(schc)
+str(schc)
 
 plot(schc$year, schc$BG1, col = "red", ylim = c(90, 300), ylab = "day", xlab = "year")
 lines(schc$year, schc$BG1, col = "red", type = "l")
-lines(schc$year, schc$EG1, col = "blue",type = "p")
-lines(schc$year, schc$EG1, col = "blue",type = "l")
+lines(schc$year, schc$EG1, col = "blue", type = "p")
+lines(schc$year, schc$EG1, col = "blue", type = "l")
 
-schc$EG1-schc$BG1
+schc$EG1 - schc$BG1
+
+
+
+
 ```
 
 #### Чтение размеров клеток по деревьям и годам (малая минуса)
@@ -94,25 +101,22 @@ rm(sm.cli, Hakasskaja.cli, Minusinsk.cli.1964.2013)
 <http://www.inside-r.org/packages/cran/pracma/docs/movavg>
 
 ```{r temperature_smoothed}
-# > install.packages("pracma")
-# http://matlab.exponenta.ru/curvefitting/3_10.php
-#library(pracma)
-source(paste(mm_path, "movavg.R", sep = ''))
-source(paste(mm_path, "rand.R", sep = ''))
-source(paste(mm_path, "size.R", sep = ''))
-# lsb_release -a
-# https://cran.r-project.org/bin/linux/ubuntu/
-# синтетический тест
-X <- seq(0,5, by = 0.005); length(X)
-Y <- X*sin(3*X) + 2*randn(size(X))
+# > install.packages('pracma') http://matlab.exponenta.ru/curvefitting/3_10.php library(pracma)
+source(paste(mm_path, "movavg.R", sep = ""))
+source(paste(mm_path, "rand.R", sep = ""))
+source(paste(mm_path, "size.R", sep = ""))
+# lsb_release -a https://cran.r-project.org/bin/linux/ubuntu/ синтетический тест
+X <- seq(0, 5, by = 0.005)
+length(X)
+Y <- X * sin(3 * X) + 2 * randn(size(X))
 plot(X, Y, col = "blue")
 T <- movavg(Y, 33, type = "t")
 T2 <- movavg(Y, 191, type = "t")
 lines(X, T, col = "red", lwd = "3")
 lines(X, T2, col = "green", lwd = "3")
 grid(NA, 5, lwd = 2)
-lines(lowess(X, Y, f=0.05, iter = 4, delta = 0.01 * diff(range(X))), 
-        lwd = 5, col = "black")
+lines(lowess(X, Y, f = 0.05, iter = 4, delta = 0.01 * diff(range(X))), lwd = 5, col = "black")
+
 ```
 
 ```{r synt}
@@ -182,11 +186,13 @@ SPEEDT(Minusinsk.cli, schc, 1965)
 ```{r SUMT12C}
 # функция преобразующая дату в количество дней с начала года
 num_days <- function(year, month, day) {
-  D1 <- as.Date(paste(year, "-1-1", sep = ""))
-  asd <- as.Date(paste(year, "-", month, "-", day, sep = ""))
-  return(as.numeric(difftime(asd, D1, units = "day")))
+    D1 <- as.Date(paste(year, "-1-1", sep = ""))
+    asd <- as.Date(paste(year, "-", month, "-", day, sep = ""))
+    return(as.numeric(difftime(asd, D1, units = "day")))
 }
-num_days(1964, 6, 22)
+ND <- num_days(1964, 6, 22)
+ND
+
 ```
 #### Преобразование вектора Год-Месяц-День в строку пригодную для обратного преобразования
 ```{r date2string}
@@ -241,20 +247,23 @@ sum_temp <- T2205(Minusinsk.cli, schc, 1965, 5); sum_temp
 
 ```{r SUMT0}
 # Сумма температур больше 0C - Сумма температур больше 5C
-SUMT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
-  year <- get_one_year(data.cli, s.year)
-  year <- na.omit(year)
-  sum_temp <- 0
-  for(i in 1: length(year[, 1])) {
-    if(year[i, ]$TMEAN > temp.c) {
-      sum_temp <- sum_temp + year[i, ]$TMEAN
+SUMT0 <- function(data.cli, data.calc, s.year, temp.c = 0) {
+    year <- get_one_year(data.cli, s.year)
+    year <- na.omit(year)
+    sum_temp <- 0
+    for (i in 1:length(year[, 1])) {
+        if (year[i, ]$TMEAN > temp.c) {
+            sum_temp <- sum_temp + year[i, ]$TMEAN
+        }
     }
-  }
-  return(sum_temp)
+    return(sum_temp)
 }
 # test
-sum_temp <- SUMT0(Minusinsk.cli, schc, 1963, 0); sum_temp
-sum_temp <- SUMT0(Minusinsk.cli, schc, 1963, 5); sum_temp
+sum_temp <- SUMT0(Minusinsk.cli, schc, 1963, 0)
+sum_temp
+sum_temp <- SUMT0(Minusinsk.cli, schc, 1963, 5)
+sum_temp
+
 ```
 
 #### Дата перехода через 0C-5C в начале сезона роста
