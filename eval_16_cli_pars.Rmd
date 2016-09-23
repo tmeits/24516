@@ -117,29 +117,6 @@ lines(X, T2, col = "green", lwd = "3")
 grid(NA, 5, lwd = 2)
 lines(lowess(X, Y, f = 0.05, iter = 4, delta = 0.01 * diff(range(X))), lwd = 5, col = "black")
 
-```
-
-```{r synt}
-# > install.packages("pracma")
-# http://matlab.exponenta.ru/curvefitting/3_10.php
-#library(pracma)
-source(paste(mm_path, "movavg.R", sep = ''))
-source(paste(mm_path, "rand.R", sep = ''))
-source(paste(mm_path, "size.R", sep = ''))
-# lsb_release -a
-# https://cran.r-project.org/bin/linux/ubuntu/
-# синтетический тест
-X <- seq(0,5, by = 0.0003); length(X)
-Y <- X*sin(3*X) + 2*randn(size(X))
-plot(X, Y, col = "blue")
-T <- movavg(Y, 33, type = "t")
-T2 <- movavg(Y, 191, type = "t")
-lines(X, T, col = "red", lwd = "3")
-lines(X, T2, col = "green", lwd = "3")
-grid(NA, 5, lwd = 2)
-lines(lowess(X, Y, f=0.05, iter = 4, delta = 0.01 * diff(range(X))), 
-        lwd = 5, col = "grey")
-```
 
 ```{r ggplot2, eval=FALSE, include=FALSE}
 # install.packages("ggplot2")
@@ -426,10 +403,6 @@ EVAL16CLIPARS <- function(data.cli, data.calc) {
     # Сумма осадков в течение сезона роста
     df16$SUMPREC[i] <- SUMPREC(data.cli, data.calc, data.calc$year[i])
   }
-  
-  
-  # сохраняем расчетную таблицу в файл
-  
   # возвращаем расчетную таблицу из функции
   return(df16)
 }
@@ -437,6 +410,15 @@ EVAL16CLIPARS <- function(data.cli, data.calc) {
 E <- EVAL16CLIPARS(Minusinsk.cli, schc)
 str(E)
 head(E)
+```
+#### Записываем результаты расчетов в таблицу Excel
+```{r writetable}
+write_eval_clipars <- function(filename.full, df.eval) {
+    # сохраняем расчетную таблицу в файл
+    write.table(file = filename.full, df.eval, row.names = FALSE, sep = " ", 
+        quote = FALSE, eol = "\n", na = "NA", dec = ".", col.names = TRUE)
+}
+write_eval_clipars(paste(mm_path, "eval_16_cli_pars.csv", sep = ""), E)
 
 ```
 Климатические параметры сопоставлялись с данными по клеточной структуре годичных колец лиственницы (Larix cajanderi, Mayr.), произрастающей в районе нижнего течения р. Индигирки (690 27’-700 30’ с.ш., 1480 07’-1500 27’ в.д.).
