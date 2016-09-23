@@ -13,53 +13,49 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r clear_all}
 clear_all <- function() {
-    rm(list = ls())
-    cat("\f")  # очистка локальной области видимости
-    print(ls())
+  rm(list=ls()); cat("\014") # очистка локальной области видимости
+  print(ls())
 }
 clear_all()
-rm(list = ls())
-cat("\f")
-
+rm(list=ls()); cat("\014")
 ```
+
 #### Установка абсолютного пути к рабочей директории
 ```{r set_work_dir}
-getworkdir <- function() {
-    if (R.version$os == "linux-gnu") {
-        return("/home/larisa/Dropbox/24516/")
-    }
-    return("C:/Users/IVA/Dropbox/24516/")
+getworkdir <- function(){
+  if(R.version$os == "linux-gnu"){ 
+    return('/home/larisa/Dropbox/24516/')
+  } 
+  return('C:/Users/IVA/Dropbox/24516/')
 }
 mm_path <- getworkdir()
 
 setwd(mm_path)
-
 ```
 
 #### Чтения файла с данными VS-model
   + BG1 and EG1 (начало и конец сезона роста от Маргариты)
   + Построение графика
+  + Вычисление длительности в днях сезона роста
 ```{r read_and_plot}
-schc <- read.csv(paste(getworkdir(), "1936_2009.dat", sep = ""), header = TRUE, sep = "", dec = ".")
+schc <- read.csv(paste(getworkdir(), '1936_2009.dat', sep = ''), 
+                 header = TRUE, sep = "", dec = ".")
 
-head(schc)
-str(schc)
+head(schc); str(schc)
 
 plot(schc$year, schc$BG1, col = "red", ylim = c(90, 300), ylab = "day", xlab = "year")
 lines(schc$year, schc$BG1, col = "red", type = "l")
-lines(schc$year, schc$EG1, col = "blue", type = "p")
-lines(schc$year, schc$EG1, col = "blue", type = "l")
+lines(schc$year, schc$EG1, col = "blue",type = "p")
+lines(schc$year, schc$EG1, col = "blue",type = "l")
 
-schc$EG1 - schc$BG1
-
-
-
-
+#Вычисление длительности в днях сезона роста
+schc$EG1-schc$BG1
 ```
 
 #### Чтение размеров клеток по деревьям и годам (малая минуса)
   + таблица с данными кластеризованна на три кластера
-  <>
+  + данные записаны в формате Excel
+  + Округляем до 2 цифр и выводим заголовок
 
 ```{r read_cells_datasets}
 sm <- read.csv(paste(mm_path, 'small_minusa_lda_sep_3.csv', sep = ''), 
@@ -74,6 +70,7 @@ head(sm_round)
   + Удаляем качество замера
   + Присваиваем столбцам наименования
   + Разделяем по разным таблицам метеостанцию Minusinsk.cli и Hakasskaja.cli 
+  + Очищаем память от лишних переменных
 
 ```{r read_cli_datasets}
 sm.cli <- read.csv(paste(mm_path, 'cli/SCH231.txt', sep = ''), 
@@ -101,34 +98,62 @@ rm(sm.cli, Hakasskaja.cli, Minusinsk.cli.1964.2013)
 <http://www.inside-r.org/packages/cran/pracma/docs/movavg>
 
 ```{r temperature_smoothed}
-# > install.packages('pracma') http://matlab.exponenta.ru/curvefitting/3_10.php library(pracma)
-source(paste(mm_path, "movavg.R", sep = ""))
-source(paste(mm_path, "rand.R", sep = ""))
-source(paste(mm_path, "size.R", sep = ""))
-# lsb_release -a https://cran.r-project.org/bin/linux/ubuntu/ синтетический тест
-X <- seq(0, 5, by = 0.005)
-length(X)
-Y <- X * sin(3 * X) + 2 * randn(size(X))
+# > install.packages("pracma")
+# http://matlab.exponenta.ru/curvefitting/3_10.php
+#library(pracma)
+source(paste(mm_path, "movavg.R", sep = ''))
+source(paste(mm_path, "rand.R", sep = ''))
+source(paste(mm_path, "size.R", sep = ''))
+# lsb_release -a
+# https://cran.r-project.org/bin/linux/ubuntu/
+# синтетический тест
+X <- seq(0,5, by = 0.005); #length(X)
+Y <- X*sin(3*X) + 2*randn(size(X))
 plot(X, Y, col = "blue")
 T <- movavg(Y, 33, type = "t")
 T2 <- movavg(Y, 191, type = "t")
 lines(X, T, col = "red", lwd = "3")
 lines(X, T2, col = "green", lwd = "3")
 grid(NA, 5, lwd = 2)
-lines(lowess(X, Y, f = 0.05, iter = 4, delta = 0.01 * diff(range(X))), lwd = 5, col = "black")
+lines(lowess(X, Y, f=0.05, iter = 4, delta = 0.01 * diff(range(X))), 
+        lwd = 5, col = "black")
+```
 
+```{r synt}
+# > install.packages("pracma")
+# http://matlab.exponenta.ru/curvefitting/3_10.php
+#library(pracma)
+source(paste(mm_path, "movavg.R", sep = ''))
+source(paste(mm_path, "rand.R", sep = ''))
+source(paste(mm_path, "size.R", sep = ''))
+# lsb_release -a
+# https://cran.r-project.org/bin/linux/ubuntu/
+# синтетический тест
+X <- seq(0,5, by = 0.0003); # length(X)
+Y <- X*sin(3*X) + 2*randn(size(X))
+plot(X, Y, col = "blue")
+T <- movavg(Y, 33, type = "t")
+T2 <- movavg(Y, 191, type = "t")
+lines(X, T, col = "red", lwd = "3")
+lines(X, T2, col = "green", lwd = "3")
+grid(NA, 5, lwd = 2)
+lines(lowess(X, Y, f=0.05, iter = 4, delta = 0.01 * diff(range(X))), 
+        lwd = 5, col = "grey")
+```
 
 ```{r ggplot2, eval=FALSE, include=FALSE}
 # install.packages("ggplot2")
 # http://qsar4u.com/files/rintro/06.html
 # https://gist.github.com/aa989190f363e46d/e65b46dcba8874a202fe
 require(ggplot2)
-X <- seq(0,5, by = 0.001); length(X)
+X <- seq(0,5, by = 0.001); #length(X)
 Y <- X*sin(3*X) + 2*randn(size(X))
 g1 <- qplot(x = X, y = Y[1,], geom = "point")
 g1
 ```
 #### Служебные функции
+  + Чтение климатических данных за один год
+  + Чтение из результатов VS-model значений начала и конца сезона роста по всем мод. годам
 ```{r getyear}
 get_one_year <- function(years, now) {
   # Чтение климатических данных за один год
@@ -143,8 +168,8 @@ season_growth <- function(sgs, s.year) {
 S64 <- season_growth(schc, 1964)
 ```
 #### Для каждого года составленны функции для рассчета 16 климатических характеристик 
-  + Это позволило охарактеризовать каждый сезон роста 16-мерным вектором (Шишов В.В. табл. 2.7.1, глава 2)
-  + Климатические характеристики, рассчитанные по ежедневным данным температуры и осадков по метеостанции в районе
+  + Это позволило охарактеризовать каждый сезон роста 16-мерным вектором (Шишов В.В. табл. 2.7.1, глава 2 стр. 194)
+  + Климатические характеристики, рассчитанные по ежедневным данным температуры и осадков по метеостанции в районе ММ
 
 <http://www.inp.nsk.su/~baldin/DataAnalysis/R/R-03-datatype.pdf>
 <http://www.stat.berkeley.edu/classes/s133/dates.html>
@@ -154,7 +179,7 @@ S64 <- season_growth(schc, 1964)
 
 # Скорость подъема температуры
 SPEEDT <- function (data.cli, data.calc, s.year) {
-  return(1) # Градусов цельция в год?
+  return(round(rnorm(n = 1, mean = 5, sd = 1), digits = 2)) # Градусов цельция в год?
 }
 SPEEDT(Minusinsk.cli, schc, 1965)
 ```
@@ -163,13 +188,11 @@ SPEEDT(Minusinsk.cli, schc, 1965)
 ```{r SUMT12C}
 # функция преобразующая дату в количество дней с начала года
 num_days <- function(year, month, day) {
-    D1 <- as.Date(paste(year, "-1-1", sep = ""))
-    asd <- as.Date(paste(year, "-", month, "-", day, sep = ""))
-    return(as.numeric(difftime(asd, D1, units = "day")))
+  D1 <- as.Date(paste(year, "-1-1", sep = ""))
+  asd <- as.Date(paste(year, "-", month, "-", day, sep = ""))
+  return(as.numeric(difftime(asd, D1, units = "day")))
 }
-ND <- num_days(1964, 6, 22)
-ND
-
+num_days(1964, 6, 22)
 ```
 #### Преобразование вектора Год-Месяц-День в строку пригодную для обратного преобразования
 ```{r date2string}
@@ -208,7 +231,7 @@ sum_temp <- FT2205(Minusinsk.cli, schc, 1965, 5); sum_temp
 T2205 <- function (data.cli, data.calc, s.year, temp.c = 0) {
   year <- get_one_year(data.cli, s.year)
   year <- na.omit(year)
-  nd <- num_days(s.year, 6, 22)
+  nd <- num_days(s.year, 6, 22) 
   sum_temp <- 0
   for(i in 1: nd) {
     if(year[i, ]$TMEAN > temp.c) {
@@ -224,23 +247,20 @@ sum_temp <- T2205(Minusinsk.cli, schc, 1965, 5); sum_temp
 
 ```{r SUMT0}
 # Сумма температур больше 0C - Сумма температур больше 5C
-SUMT0 <- function(data.cli, data.calc, s.year, temp.c = 0) {
-    year <- get_one_year(data.cli, s.year)
-    year <- na.omit(year)
-    sum_temp <- 0
-    for (i in 1:length(year[, 1])) {
-        if (year[i, ]$TMEAN > temp.c) {
-            sum_temp <- sum_temp + year[i, ]$TMEAN
-        }
+SUMT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
+  sum_temp <- 0
+  for(i in 1: length(year[, 1])) {
+    if(year[i, ]$TMEAN > temp.c) {
+      sum_temp <- sum_temp + year[i, ]$TMEAN
     }
-    return(sum_temp)
+  }
+  return(sum_temp)
 }
 # test
-sum_temp <- SUMT0(Minusinsk.cli, schc, 1963, 0)
-sum_temp
-sum_temp <- SUMT0(Minusinsk.cli, schc, 1963, 5)
-sum_temp
-
+sum_temp <- SUMT0(Minusinsk.cli, schc, 1963, 0); sum_temp
+sum_temp <- SUMT0(Minusinsk.cli, schc, 1963, 5); sum_temp
 ```
 
 #### Дата перехода через 0C-5C в начале сезона роста
@@ -410,16 +430,17 @@ EVAL16CLIPARS <- function(data.cli, data.calc) {
 E <- EVAL16CLIPARS(Minusinsk.cli, schc)
 str(E)
 head(E)
+
 ```
 #### Записываем результаты расчетов в таблицу Excel
 ```{r writetable}
 write_eval_clipars <- function(filename.full, df.eval) {
-    # сохраняем расчетную таблицу в файл
-    write.table(file = filename.full, df.eval, row.names = FALSE, sep = " ", 
-        quote = FALSE, eol = "\n", na = "NA", dec = ".", col.names = TRUE)
-}
-write_eval_clipars(paste(mm_path, "eval_16_cli_pars.csv", sep = ""), E)
-
+     # сохраняем расчетную таблицу в файл
+     write.table(file = filename.full, df.eval, row.names = FALSE, sep = " ", 
+         quote = FALSE, eol = "\n", na = "NA", dec = ".", col.names = TRUE)
+ }
+ write_eval_clipars(paste(mm_path, "eval_16_cli_pars.csv", sep = ""), E)
+ 
 ```
 Климатические параметры сопоставлялись с данными по клеточной структуре годичных колец лиственницы (Larix cajanderi, Mayr.), произрастающей в районе нижнего течения р. Индигирки (690 27’-700 30’ с.ш., 1480 07’-1500 27’ в.д.).
 
