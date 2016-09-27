@@ -461,3 +461,5 @@ read
 <http://distrland.blogspot.ru/2015/02/r.html#more>
 <http://distrland.blogspot.ru/2014/12/excel-r.html#more>
 <http://distrland.blogspot.ru/2014/12/r.html#more>
+следовать
+<http://adv-r.had.co.nz/Style.html>
