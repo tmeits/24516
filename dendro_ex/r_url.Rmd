@@ -1,0 +1,34 @@
+
+### URL
+ 
+ ***
+ 
+#### Для ВАЙНА
+
+  + <https://github.com/uarun/dotfiles/tree/master/fonts>
+  + <http://www.wine-reviews.net/2009/03/how-to-enable-font-anti-aliasing-in.html>
+  + <https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf>
+  + [Сборка собственных пакетов в GNU R](http://rus-linux.net/MyLDP/algol/R/r06.html) :smile:
+      
+
+#### Программное обеспечение
+ 
+***
+ 
+  + [Markdown-Edit](https://github.com/mike-ward/Markdown-Edit/releases/tag/v1.30.2)
+  
+***
+#### Руководства по markdown
+ 
+***
+ 
+  + [Reproducible research and R authoring with markdown and knitr](https://www.bioconductor.org/help/course-materials/2015/CSAMA2015/lab/rr-authoring.html)
+  
+***
+ 
+ inline equation: $A = \pi*r^{2}$
+ image: ![](https://tree.taiga.io/support/images/icon-taiga-color.png?h=221ec64e)      
+
+``` {r}
+
+```
