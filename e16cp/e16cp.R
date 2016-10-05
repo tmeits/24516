@@ -9,53 +9,60 @@
 
 ```{r e16cp}
 
-## System reads
-#
-get_os <- function(){
+## Set work path
+
+getOsVersion <- function(){
   sysinf <- Sys.info()
   if (!is.null(sysinf)){
-    os <- sysinf['sysname']
-    if (os == 'Darwin')
-      os <- "osx"
-  } else { ## mystery machine
-    os <- .Platform$OS.type
-    if (grepl("^darwin", R.version$os))
-      os <- "osx"
-    if (grepl("linux-gnu", R.version$os))
-      os <- "linux"
+    osVersion <- sysinf["version"]
+  } 
+  else { 
+    stop("mystery machine")
   }
-  tolower(os)
+  return(osVersion)
 }
-get_os()
+getOsVersion()
 
 # Installation of a working directory
-getworkdir <- function(){
-  if(R.version$os == "linux-gnu") { 
-      return('/home/larisa/Dropbox/24516/')
-  }
-  else-if (R.version$os == "mingw32") {
-      return("Z:/home/larisa/Dropbox/24516/eval16clipars/")
-  }
-  else return('C:/Users/IVA/Dropbox/24516/')
+setWorkDir <- function(osVersion) {
+    if (osVersion == "build 2600, Service Pack 3") {
+        setwd("Z:/home/larisa/Dropbox/24516/eval16clipars/")
+    } else if (osVersion == "#32-Ubuntu SMP Fri Apr 16 08:10:02 UTC 2010") {
+        setwd("/home/larisa/Dropbox/24516/eval16clipars/")
+    } else if (osVersion == "build 7601, Service Pack 1") {
+        setwd("C:/Users/IVA/Dropbox/24516/eval16clipars/")
+    } else stop("mystery...")  # add other osVersion
+    return(getwd())
 }
-mm_path <- getworkdir()
-mm_path <- "C:/Users/IVA/Dropbox/24516/"
+setWorkDir(getOsVersion())
+# mm_path <- 'C:/Users/IVA/Dropbox/24516/'
+mm_path <- setWorkDir(getOsVersion())
+mm_path
 
-setwd(mm_path)
 
-# Read datasets
+
+## Read datasets
 # Work with weather data <http://aisori.meteo.ru/ClimateR> [R]
-sm.cli <- read.csv(paste0(mm_path, "cli/SCH231.txt"), header = FALSE, sep = ";", 
+readClimateMinusinsk <- function(url){
+    sm.cli <- read.csv(url, header = FALSE, sep = ";", 
     dec = ".")  # read Climate
-sm.cli <- sm.cli[-c(5, 7, 9, 11, 13, 14)]  # we delete excess columns
-sm.cli <- setNames(sm.cli, c("Station", "Year", "Month", "Day", "TMIN", "TMEAN", 
+    sm.cli <- sm.cli[-c(5, 7, 9, 11, 13, 14)]  # we delete excess columns
+    sm.cli <- setNames(sm.cli, c("Station", "Year", "Month", "Day", "TMIN", "TMEAN", 
     "TMAX", "PRECIP")) # Assign columns names
-# 53.42N 91.42E
-Minusinsk.cli <- sm.cli[sm.cli$Station == 29866, ]
+    # 53.42N 91.42E
+    Minusinsk.cli <- sm.cli[sm.cli$Station == 29866, ]
+    return(Minusinsk.cli)
+}
+Minusinsk.cli <- readClimateMinusinsk(paste0(mm_path, "/cli/SCH231.txt"))
+head(Minusinsk.cli)
+str(Minusinsk.cli)
+summary(Minusinsk.cli)
 
 # Read data file VS-model
-schc <- read.csv(paste(mm_path, "1936_2009.dat", sep = ""), header = TRUE, 
+schc <- read.csv(paste(mm_path, "/1936_2009.dat", sep = ""), header = TRUE, 
     sep = "", dec = ".")
+
+
 head(schc)
 str(schc)
 schc <- schc[-c(2,3,4,5,6,9,10,11,12,13)]
@@ -64,7 +71,7 @@ str(schc)
 
 # The calculation of duration in days growing season
 cat("The calculation of duration in days growing season\n", schc$EG1-schc$BG1,"\n")
-
+summary(schc$EG1-schc$BG1)
 
 ## Utility functions
 # Reading climatic data in one year
@@ -274,7 +281,67 @@ cat("MDAT= ", MD, MDS, "\n")
 ```
 ### EVAL16CLIPARS
 ``` {r eval16}
+EVAL16CLIPARS <- function(data.cli, data.calc) {
+    l <- length(data.calc[, 1])  # the calculation of the number of observations 
+    # the creation of a matrix of l rows and 16 columns
+    m16 <- matrix(c(1:(l * 16)), nrow = l, ncol = 16, byrow = TRUE)
+    m16.df <- as.data.frame(m16)  #  converted to dataframe
+    # assign names to the columns
+    df16 <- setNames(m16.df, c("STDAT0", "STDAT5", "FDAT0", "FDAT5", "INTER0", 
+        "INTER5", "MAXT", "MDAT", "SUMT0", "SUMT5", "T220", "T225", "FT220", "FT225", 
+        "SPEEDT", "SUMPREC"))
+    # the task is to determine the data type of each column
+    df16$STDAT0 <- as.character(df16$STDAT0)
+    df16$STDAT5 <- as.character(df16$STDAT5)
+    df16$FDAT0 <- as.character(df16$FDAT0)
+    df16$FDAT5 <- as.character(df16$FDAT5)
+    df16$MDAT <- as.array(df16$MDAT)
+    
+    for (i in 1:l) {
+        # The date of transition through 0C at the beginning of the growing season STDAT0
+        D <- STDAT0(data.cli, data.calc, data.calc$year[i])
+        df16$STDAT0[i] <- date2string(D)
+        # The date of transition through 5C in the beginning of the growing season STAT5
+        D <- STDAT0(data.cli, data.calc, data.calc$year[i], 11)
+        df16$STDAT5[i] <- date2string(D)
+        # Date of transition at the end of the season after 0 - 5
+        D <- FDAT0(data.cli, data.calc, data.calc$year[i])
+        df16$FDAT0[i] <- date2string(D)
+        D <- FDAT0(data.cli, data.calc, data.calc$year[i], 5)
+        df16$FDAT5[i] <- date2string(D)
+        # The maximum temperature
+        df16$MAXT[i] <- MAXT(data.cli, data.calc$year[i])
+        # Date of the maximum temperature
+        D <- MDAT(data.cli, data.calc$year[i])
+        df16$MDAT[i] <- date2string(D)
+        # The duration of the season from 0C to 0C, 5C to 5C
+        SL <- INTER0(data.cli, data.calc, data.calc$year[i])
+        df16$INTER0[i] <- SL
+        df16$INTER5[i] <- INTER0(data.cli, data.calc, data.calc$year[i], temp.c = 5)
+        # The sum of temperatures more 0C, 5C 
+        df16$SUMT0[i] <- SUMT0(data.cli, data.calc, data.calc$year[i])
+        df16$SUMT5[i] <- SUMT0(data.cli, data.calc, data.calc$year[i], 5)
+        # The sum of temperatures above 0C-5C until June 22
+        df16$T220[i] <- T2205(data.cli, data.calc, data.calc$year[i])
+        df16$T225[i] <- T2205(data.cli, data.calc, data.calc$year[i], 5)
+        # The sum of temperatures from 22 June to go through 0o at the end of the season
+        df16$FT220[i] <- FT2205(data.cli, data.calc, data.calc$year[i])
+        df16$FT225[i] <- FT2205(data.cli, data.calc, data.calc$year[i], temp.c = 5)
+        # The rate of temperature rise of
+        df16$SPEEDT[i] <- SPEEDT(data.cli, data.calc, data.calc$year[i])
+        # Сумма осадков в течение сезона роста
+        df16$SUMPREC[i] <- SUMPREC(data.cli, data.calc, data.calc$year[i])
+    }
+    # the estimated return table from function
+    return(df16)
+}
+
+E <- EVAL16CLIPARS(Minusinsk.cli, schc)
+str(E)
+head(E)
+summary(E)
 cat("EVAL16CLIPARS Done.")
+
 ```
 
 ```{r writenewdatasets}
@@ -283,7 +350,7 @@ write_eval_clipars <- function(filename.full, df.eval) {
     write.table(file = filename.full, df.eval, row.names = FALSE, sep = ";", quote = FALSE, 
         eol = "\n", na = "NA", dec = ".", col.names = TRUE)
 }
-# write_eval_clipars(paste(mm_path, 'e16cp.csv', sep = ''), E)
+write_eval_clipars(paste(mm_path, '/e16cp.csv', sep = ''), E)
 
 ```
 
