@@ -57,12 +57,17 @@ Minusinsk.cli <- readClimateMinusinsk(paste0(mm_path, "/cli/SCH231.txt"))
 head(Minusinsk.cli)
 str(Minusinsk.cli)
 summary(Minusinsk.cli)
+sum(is.na(Minusinsk.cli))
+mean(is.na(Minusinsk.cli))
 
 # Read data file VS-model
-schc <- read.csv(paste(mm_path, "/1936_2009.dat", sep = ""), header = TRUE, 
+readCliBE <- function(url) {
+   schc <- read.csv(url, header = TRUE, 
     sep = "", dec = ".")
+    return(schc)
+}
 
-
+schc <-  readCliBE(paste0(mm_path, "/1936_2009.dat"))
 head(schc)
 str(schc)
 schc <- schc[-c(2,3,4,5,6,9,10,11,12,13)]
@@ -370,6 +375,7 @@ runAllChunks <- function(rmd, envir = globalenv()) {
 # file:///home/larisa/Dropbox/24516/eval16clipars/e16cp.html
 # require(knitr); knit2html('Z:/home/larisa/Dropbox/24516/eval16clipars/e16cp.R')
 # http://www.biostat.jhsph.edu/~rpeng/docs/R-debug-tools.pdf
+# http://tukachev.flogiston.ru/blog/?p=1352
 ```
 
 
