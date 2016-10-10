@@ -10,7 +10,6 @@
 ```{r e16cp}
 
 ## Set work path
-
 getOsVersion <- function(){
   sysinf <- Sys.info()
   if (!is.null(sysinf)){
@@ -35,11 +34,8 @@ setWorkDir <- function(osVersion) {
     return(getwd())
 }
 setWorkDir(getOsVersion())
-# mm_path <- 'C:/Users/IVA/Dropbox/24516/'
 mm_path <- setWorkDir(getOsVersion())
 mm_path
-
-
 
 ## Read datasets
 # Work with weather data <http://aisori.meteo.ru/ClimateR> [R]
@@ -332,7 +328,7 @@ EVAL16CLIPARS <- function(data.cli, data.calc) {
         # The sum of temperatures from 22 June to go through 0o at the end of the season
         df16$FT220[i] <- FT2205(data.cli, data.calc, data.calc$year[i])
         df16$FT225[i] <- FT2205(data.cli, data.calc, data.calc$year[i], temp.c = 5)
-        # The rate of temperature rise of
+        # The rate of temperature rise of (Скорость подъема температуры)
         df16$SPEEDT[i] <- SPEEDT(data.cli, data.calc, data.calc$year[i])
         # Сумма осадков в течение сезона роста
         df16$SUMPREC[i] <- SUMPREC(data.cli, data.calc, data.calc$year[i])
@@ -340,7 +336,12 @@ EVAL16CLIPARS <- function(data.cli, data.calc) {
     # the estimated return table from function
     return(df16)
 }
-
+```
+### Results of calculation
+  + Structure of the table of results
+  + First 6 lines
+  + Descriptive statisticians (one line one year)
+```{r}
 E <- EVAL16CLIPARS(Minusinsk.cli, schc)
 str(E)
 head(E)
@@ -348,12 +349,12 @@ summary(E)
 cat("EVAL16CLIPARS Done.")
 
 ```
-
+### Write to file - format data.frame (e16cp.csv)
 ```{r writenewdatasets}
 # Write to file - format data.frame
 write_eval_clipars <- function(filename.full, df.eval) {
     write.table(file = filename.full, df.eval, row.names = FALSE, sep = ";", quote = FALSE, 
-        eol = "\n", na = "NA", dec = ".", col.names = TRUE)
+        eol = "\n", na = "NA", dec = ",", col.names = TRUE)
 }
 write_eval_clipars(paste(mm_path, '/e16cp.csv', sep = ''), E)
 
@@ -372,10 +373,21 @@ runAllChunks <- function(rmd, envir = globalenv()) {
 }
 
 #runAllChunks("e16cp1.R")
+
+```
+#### Tips
+```{r tips}
 # file:///home/larisa/Dropbox/24516/eval16clipars/e16cp.html
 # require(knitr); knit2html('Z:/home/larisa/Dropbox/24516/eval16clipars/e16cp.R')
 # http://www.biostat.jhsph.edu/~rpeng/docs/R-debug-tools.pdf
 # http://tukachev.flogiston.ru/blog/?p=1352
+#  http://kpfu.ru/docs/F568269105/metodichka_R_1.pdf
+#  http://shelly.kpfu.ru/e-ksu/docs/F1594376599/%ec%e5%f2%ee%e4%e8%f7%ea%e0_R_2.pdf
+#  http://herba.msu.ru/shipunov/software/r/cbook.pdf
+#  http://gis-lab.info/docs/books/moskalev2010_statistical_analysis_with_r.pdf
+#  https://dl.dropboxusercontent.com/u/7521662/Zaryadov%20%282010%29%20Intro%20to%20R.pdf
+#  http://www.unn.ru/pages/e-library/methodmaterial/2010/3.pdf
+#
 ```
 
 
