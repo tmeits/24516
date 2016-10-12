@@ -49,6 +49,8 @@ str(Minusinsk.cli)
 summary(Minusinsk.cli)
 sum(is.na(Minusinsk.cli))
 mean(is.na(Minusinsk.cli))
+```
+```{r master_location}
 
 st <- read.csv("master-location-identifier-database-20130801.csv", header = TRUE, sep = ",", dec = ".")
 
@@ -59,20 +61,8 @@ for (i in 1:L) {
             cat(i, "\n")
     }
 }
-# install.packages('xlsx', dependencies=TRUE, repos='http://cran.rstudio.com/')
-#library(xlsx)
-#install.packages('WriteXLS', dependencies=TRUE, repos='http://cran.rstudio.com/')
-#write.xlsx(Minusinsk.cli, paste0(mm_path, "/Minusinsk.cli.xlsx"))
-require(WriteXLS)
-library(WriteXLS)
-x <- list(sheet_a = data.frame(a=letters), sheet_b = data.frame(b = LETTERS))
-WriteXLS(x, paste0(mm_path, "/test.xlsx"), names(x))
-
-install.packages('pacman', dependencies=TRUE, repos='http://cran.rstudio.com/')
-install.packages('openxlsx', dependencies=TRUE, repos='http://cran.rstudio.com/')
-l <- list("iris" = iris, "mtcars" = mtcars, chickwts = chickwts, quakes = quakes)
-openxlsx::write.xlsx(l, file = "Z:/home/larisa/Dropbox/24516/transect/datasets.xlsx")
-
+```
+```{r VS}
 # Read data file VS-model
 readCliBE <- function(url) {
    schc <- read.csv(url, header = TRUE, 
@@ -91,11 +81,9 @@ cat("The calculation of duration in days growing season\n", schc$EG1-schc$BG1,"\
 summary(schc$EG1-schc$BG1)
 
 ```
-
+## Utility functions
 ```{r utility}
 
-
-## Utility functions
 # Reading climatic data in one year
 get_one_year <- function(years, now) {
     return(years[years$Year == now, ])
@@ -103,6 +91,29 @@ get_one_year <- function(years, now) {
 Y64 <- get_one_year(Minusinsk.cli, 1964) # test
 head(Y64)
 summary(Y64[, 5:8])
+
+# Считать начало сезона роста переход суммарной температуры sumT за 10 последовательных дней через пороговое значение в 90 градусов Цельсия. Тогда началом сезона роста можно считать первый день в этой последовательности, когда это условия будет выполнено (т.е. sumT>=90). 
+# the beginning of the growing season
+seasonBG <- function(years, now) {
+    year <- get_one_year(years, now)            
+    year <- na.omit(year)
+    yearT <- year[, ]$TMEAN
+    yearL <- length(yearT)
+    for (i in 1: yearL) {
+        sumT <- sum(yearT[i: (i+10)])
+        if (!is.na(sumT))
+            if (sumT >= 90) return (i)
+    }
+    return(i)
+}
+seasonBG(Minusinsk.cli, 1961) # test
+
+# the end of the growing season
+seasonEG <- function() {
+        
+    
+}
+
 
 # Reading of results VS model values for the beginning and end of the growing
 # season for all mod. years
@@ -377,9 +388,27 @@ write_eval_clipars <- function(filename.full, df.eval) {
     write.table(file = filename.full, df.eval, row.names = FALSE, sep = ";", quote = FALSE, 
         eol = "\n", na = "NA", dec = ",", col.names = TRUE)
 }
-write_eval_clipars(paste(mm_path, '/e16cp.csv', sep = ''), E)
+write_eval_clipars(paste0(mm_path, '/e16cp.csv'), E)
 
 ```
+### WriteXLSX
+  + <https://github.com/stan-dev/rstan/wiki/Install-Rtools-for-Windows>
+  + <https://cran.r-project.org/bin/windows/Rtools/>
+  + <https://github.com/awalker89/openxlsx/issues/111>
+```{r xlsx}
+#install.packages('pacman', dependencies=TRUE, repos='http://cran.rstudio.com/')
+#install.packages('openxlsx', dependencies=TRUE, repos='http://cran.rstudio.com/')
+
+Sys.setenv("R_ZIPCMD" = "C:/Rtools/bin/zip.exe") ## path to zip.exe
+require(openxlsx)
+# test data.frame's
+testWriteReadXLSX <- function(fileName) {
+    l <- list("iris" = iris, "mtcars" = mtcars, chickwts = chickwts, quakes = quakes)
+    openxlsx::write.xlsx(l, file = fileName)
+    R <- openxlsx::read.xlsx(xlsxFile = fileName, sheet = 3, skipEmptyRows = TRUE)
+    return(R)
+}
+WR <- testWriteXLSX(paste0(mm_path, "/datasets.xlsx"))
 
 ``` {r sysadmn}
 ## SysAdmins
