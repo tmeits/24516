@@ -207,8 +207,8 @@ FT2205 <- function(data.cli, data.calc, s.year, temp.c = 0) {
     }
     return(sum_temp)
 }
-sum_temp0 <- FT2205(Minusinsk.cli, schc, 1965, 0)
-sum_temp5 <- FT2205(Minusinsk.cli, schc, 1965, 5)
+sum_temp0 <- FT2205(Minusinsk.cli, Minusinsk.cli, 1965, 0)
+sum_temp5 <- FT2205(Minusinsk.cli, Minusinsk.cli, 1965, 5)
 cat("FT2205= ", sum_temp0, sum_temp5, "\n")
 
 # The sum of temperatures above 0C until June 22/the Sum of temperatures above
@@ -225,8 +225,8 @@ T2205 <- function(data.cli, data.calc, s.year, temp.c = 0) {
     }
     return(sum_temp)
 }
-sum_temp0 <- T2205(Minusinsk.cli, schc, 1965, 0)
-sum_temp5 <- T2205(Minusinsk.cli, schc, 1965, 5)
+sum_temp0 <- T2205(Minusinsk.cli, Minusinsk.cli, 1965, 0)
+sum_temp5 <- T2205(Minusinsk.cli, Minusinsk.cli, 1965, 5)
 cat("T2205= ", sum_temp0, sum_temp5, "\n")
 
 # The sum of temperatures more 0C - the Sum of temperatures more than 5C
@@ -242,8 +242,8 @@ SUMT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
   return(sum_temp)
 }
 # test
-sum_temp0 <- SUMT0(Minusinsk.cli, schc, 1963, 0)
-sum_temp5 <- SUMT0(Minusinsk.cli, schc, 1963, 5)
+sum_temp0 <- SUMT0(Minusinsk.cli, Minusinsk.cli, 1963, 0)
+sum_temp5 <- SUMT0(Minusinsk.cli, Minusinsk.cli, 1963, 5)
 cat("SUMT0= ", sum_temp0, sum_temp5, "\n")
 
 # The date of transition through 0C-5C at the beginning of the growing season
@@ -262,8 +262,8 @@ STDAT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
   }
   stop("In the permafrost, the trees do not grow. Check climatico.")
 }
-R0 <- STDAT0(Minusinsk.cli, schc, 1969)
-R5 <- STDAT0(Minusinsk.cli, schc, 1969, temp.c = 11)
+R0 <- STDAT0(Minusinsk.cli, Minusinsk.cli, 1969)
+R5 <- STDAT0(Minusinsk.cli, Minusinsk.cli, 1969, temp.c = 11)
 cat("STDAT0= ", R0, R5, "\n")
 
 # Date of transition at the end of the season through 0C-5C
@@ -282,8 +282,8 @@ FDAT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
   }
   stop("In the permafrost, the trees do not grow. Check climatico.")
 }
-R0 <- FDAT0(Minusinsk.cli, schc, 1969)
-R5 <- FDAT0(Minusinsk.cli, schc, 1969, 5)
+R0 <- FDAT0(Minusinsk.cli, Minusinsk.cli, 1969)
+R5 <- FDAT0(Minusinsk.cli, Minusinsk.cli, 1969, 5)
 cat("FDAT0= ", R0, R5, "\n")
 
 # The duration of the season from 0C to 0C or 5C to 5C
@@ -301,9 +301,9 @@ INTER0 <- function(data.cli, data.calc, s.year, temp.c = 0) {
     days <- as.numeric(difftime(enddate, startdate, units = "day"))
     return(days)
 }
-I1 <- INTER0(Minusinsk.cli, schc, 1965, 0)
-I2 <- INTER0(Minusinsk.cli, schc, 1966, 0)
-I3 <- INTER0(Minusinsk.cli, schc, 1969, 5)
+I1 <- INTER0(Minusinsk.cli, Minusinsk.cli, 1965, 0)
+I2 <- INTER0(Minusinsk.cli, Minusinsk.cli, 1966, 0)
+I3 <- INTER0(Minusinsk.cli, Minusinsk.cli, 1969, 5)
 cat("INTER0= ", I1, I2, I3, "\n")
 
 # The amount of precipitation during the growing season
@@ -313,7 +313,7 @@ SUMPREC <- function(data.cli, data.calc, s.year) {
     
     return(sum(new.year$PRECIP[sg[1]:sg[2]]))
 }
-SP <- SUMPREC(Minusinsk.cli, schc, 1964)
+SP <- SUMPREC(Minusinsk.cli, Minusinsk.cli, 1964)
 cat("SUMPREC= ", SP, "\n")
 
 # The maximum temperature
@@ -441,10 +441,10 @@ require(openxlsx)
 testWriteReadXLSX <- function(fileName) {
     l <- list("iris" = iris, "mtcars" = mtcars, chickwts = chickwts, quakes = quakes)
     openxlsx::write.xlsx(l, file = fileName)
-    R <- openxlsx::read.xlsx(xlsxFile = fileName, sheet = 3, skipEmptyRows = TRUE)
+    R <- openxlsx::read.xlsx(xlsxFile = fileName, sheet = 1, skipEmptyRows = TRUE)
     return(R)
 }
-WR <- testWriteXLSX(paste0(mm_path, "/datasets.xlsx"))
+WR <- testWriteReadXLSX(paste0(mm_path, "/datasets.xlsx"))
 ```
 ### Summary table on climate stations
 ```{r }
