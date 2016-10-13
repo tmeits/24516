@@ -28,7 +28,7 @@ mm_path <- setWorkDir(getOsVersion())
 mm_path
 
 ```
-## Read test datasets
+#### Read test datasets
 #### Work with weather data <http://aisori.meteo.ru/ClimateR> [R]
 ```{r read_test_cli}
 
@@ -38,30 +38,18 @@ readClimateMinusinsk <- function(url) {
     sm.cli <- setNames(sm.cli, c("Station", "Year", "Month", "Day", "TMIN", "TMEAN",
         "TMAX", "PRECIP"))  # Assign columns names
     # 53.42N 91.42E
-    # http://www.khti.ru/documents/%D0%9D%D0%9E%D0%9B/%D0%9F%D1%83%D0%B1%D0%BB%D0%B8%D0%BA%D0%B0%D1%86%D0%B8%D0%B8/2014_2_En.pdf
     Minusinsk.cli <- sm.cli[sm.cli$Station == 29866, ]
     return(Minusinsk.cli)
 }
 
 Minusinsk.cli <- readClimateMinusinsk(paste0(mm_path, "/SCH231.txt"))
-head(Minusinsk.cli)
+tail(Minusinsk.cli)
 str(Minusinsk.cli)
 summary(Minusinsk.cli)
 sum(is.na(Minusinsk.cli))
 mean(is.na(Minusinsk.cli))
 ```
-```{r master_location}
-
-st <- read.csv("master-location-identifier-database-20130801.csv", header = TRUE, sep = ",", dec = ".")
-
-L <- length(st[, 1])
-for (i in 1:L) {
-    if (!is.na(st[i, 12])) {
-        if (st[i, "wmo_xref"] == 29866)
-            cat(i, "\n")
-    }
-}
-```
+### Read data file VS-model
 ```{r VS}
 # Read data file VS-model
 readCliBE <- function(url) {
@@ -70,8 +58,6 @@ readCliBE <- function(url) {
     return(schc)
 }
 schc <-  readCliBE(paste0(mm_path, "/1936_2009.dat"))
-head(schc)
-str(schc)
 schc <- schc[-c(2,3,4,5,6,9,10,11,12,13)]
 head(schc)
 str(schc)
@@ -79,9 +65,19 @@ str(schc)
 # The calculation of duration in days growing season
 cat("The calculation of duration in days growing season\n", schc$EG1-schc$BG1,"\n")
 summary(schc$EG1-schc$BG1)
+summary(schc$EG1)
+summary(schc$BG1)
+
+# Reading of results VS model values for the beginning and end of the growing
+# season for all mod. years
+season_growthVS <- function(sgs, s.year) {
+    return(c(sgs[sgs$year == s.year, ]$BG1, sgs[sgs$year == s.year, ]$EG1))
+}
+S64 <- season_growthVS(schc, 1964)
+cat("Reading of results VS model ", S64, "\n")
 
 ```
-## Utility functions
+### Utility functions
 ```{r utility}
 
 # Reading climatic data in one year
@@ -92,36 +88,50 @@ Y64 <- get_one_year(Minusinsk.cli, 1964) # test
 head(Y64)
 summary(Y64[, 5:8])
 
-# Считать начало сезона роста переход суммарной температуры sumT за 10 последовательных дней через пороговое значение в 90 градусов Цельсия. Тогда началом сезона роста можно считать первый день в этой последовательности, когда это условия будет выполнено (т.е. sumT>=90). 
+# Assume the beginning of growing season the total transition temperature sumT for 10 consecutive days using a threshold value of 90 degrees Celsius. Then the beginning of the growing season can be considered the first day in this sequence, when conditions will be made (i.e., sumT>=90).
 # the beginning of the growing season
 seasonBG <- function(years, now) {
-    year <- get_one_year(years, now)            
+    year <- get_one_year(years, now)
     year <- na.omit(year)
     yearT <- year[, ]$TMEAN
     yearL <- length(yearT)
-    for (i in 1: yearL) {
-        sumT <- sum(yearT[i: (i+10)])
+    for (i in 1:yearL) {
+        sumT <- sum(yearT[i:(i + 10)])
         if (!is.na(sumT))
-            if (sumT >= 90) return (i)
+            if (sumT >= 90)
+                return(i)
+    }
+    if(i >= yearL) stop("invalid begin day")
+    return(i)
+}
+seasonBG(Minusinsk.cli, 1964)  # test
+
+# By the end of the growing season to consider the following condition: when the sum of temperatures over 10 consecutive days is below 50 degrees. The end of the season - it's the last day in this sequence.
+# the end of the growing season
+seasonEG <- function(years, now) {
+    year <- get_one_year(years, now)
+    year <- na.omit(year)
+    yearT <- year[, ]$TMEAN
+    yearL <- length(yearT)
+    firstDay <- seasonBG(years, now)
+    if (firstDay >= yearL) 
+        stop("invalid seasonBG day")
+    for (i in firstDay:yearL) {
+        sumT <- sum(yearT[i:(i + 10)])
+        if (!is.na(sumT)) 
+            if (sumT < 50) 
+                return(i + 10)
     }
     return(i)
 }
-seasonBG(Minusinsk.cli, 1961) # test
+seasonEG(Minusinsk.cli, 1961)  # test
 
-# the end of the growing season
-seasonEG <- function() {
-        
-    
+# Beginning and end of the growing season in the specified year
+season_growth <- function(data.cli, needYear) {
+    return(c(seasonBG(data.cli, needYear), seasonEG(data.cli, needYear)))
 }
-
-
-# Reading of results VS model values for the beginning and end of the growing
-# season for all mod. years
-season_growth <- function(sgs, s.year) {
-    return(c(sgs[sgs$year == s.year, ]$BG1, sgs[sgs$year == s.year, ]$EG1))
-}
-S64 <- season_growth(schc, 1964)
-cat("Reading of results VS model ", S64, "\n")
+S64 <- season_growth(Minusinsk.cli, 1964)
+cat("Reading of results season_growth ", S64, "\n")
 
 # a function which converts date in number of days from the beginning of the
 # year
@@ -142,17 +152,43 @@ date2string <- function(cDate) {
 }
 DS <- date2string(c(2007, 11, 12))
 cat("Convert data as strung= ", DS, "\n")
-
+```
+### Graphics (computed on VS and V. S.) for years beginning and end of the growing season.
+```{r plot seasonBG_EG}
+plot(schc$year, schc$BG1)
 ```
 ### Main functions
 
+| Num  | Function  | Resume |
+|---|---|---|
+| Num  | Function  | Resume |
+|   |   |   |
+|   |   |   |
+|   |   |   |
+|   |   |   |
+|   |   |   |
+|   |   |   |
+|   |   |   |
+|   |   |   |
+|   |   |   |
+|   |   |   |
+|   |   |   |
+|   |   |   |
+|   |   |   |
+|   |   |   |
+
+
 ```{r Main16}
-## Main functions
+# http://www.tablesgenerator.com/markdown_tables#
+# SpeedT is the speed of the temperature rise since the beginning of the growing season until June 22 (the summer solstice). In fact, it is necessary to take daily temperature (time series with daily temperatures) since the beginning of the growing season (e.g. may 25) until June 22 and build for the temperature Tem trend line (i.e. the regression equation of the form=a+bt, where t is day, a and b are regression coefficients). In this case, SpeedT is the same as the coefficient b.
 # Speed of rise in temperature
-SPEEDT <- function(data.cli, data.calc = FALSE, s.year = 1964) {
-    return(round(rnorm(n = 1, mean = 5, sd = 1), digits = 2))  # Degrees a tseltion in a year?
+SPEEDT <- function(data.cli, seasonsGrowth, year) {
+
+    return(year)  
 }
-S <- SPEEDT(Minusinsk.cli)
+# http://www.montefiore.ulg.ac.be/~kvansteen/GBIO0009-1/ac20092010/Class8/Using%20R%20for%20linear%20regression.pdf
+# https://ww2.coastal.edu/kingw/statistics/R-tutorials/simplelinear.html
+S <- SPEEDT(Minusinsk.cli, schc, 1965)
 cat("SPEED= ", S, "\n")
 
 # The sum of temperatures from 22 June to transition through 0C at the end of
@@ -409,9 +445,25 @@ testWriteReadXLSX <- function(fileName) {
     return(R)
 }
 WR <- testWriteXLSX(paste0(mm_path, "/datasets.xlsx"))
+```
+### Summary table on climate stations
+```{r }
+df.names <- c("Statio_Code", "Latitude", "Longitude", "Elevation", "Start_Y", " End_Y" )
+```{r master_location}
 
-``` {r sysadmn}
-## SysAdmins
+st <- read.csv("master-location-identifier-database-20130801.csv", header = TRUE, sep = ",", dec = ".")
+
+L <- length(st[, 1])
+for (i in 1:L) {
+    if (!is.na(st[i, 12])) {
+        if (st[i, "wmo_xref"] == 23365)
+            cat(i, "\n")
+    }
+}
+
+```
+### SysAdmins
+```{r sysadmn}
 # knitr: run all chunks in an Rmarkdown document
 # http://stackoverflow.com/questions/24753969/knitr-run-all-chunks-in-an-rmarkdown-document
 runAllChunks <- function(rmd, envir = globalenv()) {
@@ -425,19 +477,28 @@ runAllChunks <- function(rmd, envir = globalenv()) {
 #runAllChunks("e16cp1.R")
 
 ```
-#### Tips
+### Tips
 ```{r tips}
 # file:///home/larisa/Dropbox/24516/eval16clipars/e16cp.html
 # require(knitr); knit2html('Z:/home/larisa/Dropbox/24516/eval16clipars/e16cp.R')
+# http://master-css.com/page/brackets-code-editor
 # http://www.biostat.jhsph.edu/~rpeng/docs/R-debug-tools.pdf
 # http://tukachev.flogiston.ru/blog/?p=1352
+# http://r-analytics.blogspot.ru/p/blog-page_20.html#.V_8uqeWLS01
 #  http://kpfu.ru/docs/F568269105/metodichka_R_1.pdf
 #  http://shelly.kpfu.ru/e-ksu/docs/F1594376599/%ec%e5%f2%ee%e4%e8%f7%ea%e0_R_2.pdf
 #  http://herba.msu.ru/shipunov/software/r/cbook.pdf
 #  http://gis-lab.info/docs/books/moskalev2010_statistical_analysis_with_r.pdf
 #  https://dl.dropboxusercontent.com/u/7521662/Zaryadov%20%282010%29%20Intro%20to%20R.pdf
 #  http://www.unn.ru/pages/e-library/methodmaterial/2010/3.pdf
-#
+#  http://gis-lab.info/docs/saveliev2012-geostat.pdf
+#  http://www.ievbras.ru/ecostat/Kiril/Article/A32/Starb.pdf
+#  http://ashipunov.info/shipunov/school/books/rbook.pdf
+#  https://dl.dropboxusercontent.com/u/7521662/Saveliev_2014_Code.rar
+#  https://dl.dropboxusercontent.com/u/7521662/Saveliev_2014_Point_Process.pdf
+#  https://github.com/ranalytics/r-tutorials/tree/master/Edition_2015
+#  http://www.ievbras.ru/ecostat/Kiril/R/Ecotox/Ecotoxicology.pdf
+#  http://www.ievbras.ru/ecostat/Kiril/R/Ecotox/Scripts_data.zip
 ```
 
 
