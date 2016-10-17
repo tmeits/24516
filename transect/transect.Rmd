@@ -183,14 +183,31 @@ plot(schc$year, schc$BG1)
 # http://www.tablesgenerator.com/markdown_tables#
 # SpeedT is the speed of the temperature rise since the beginning of the growing season until June 22 (the summer solstice). In fact, it is necessary to take daily temperature (time series with daily temperatures) since the beginning of the growing season (e.g. may 25) until June 22 and build for the temperature Tem trend line (i.e. the regression equation of the form=a+bt, where t is day, a and b are regression coefficients). In this case, SpeedT is the same as the coefficient b.
 # Speed of rise in temperature
-SPEEDT <- function(data.cli, seasonsGrowth, year) {
-
-    return(year)  
+SPEEDT <- function(data.cli, needYear, densityPlot = FALSE) {
+    year <- get_one_year(data.cli, needYear)
+    year <- na.omit(year)
+    sg <- season_growth(data.cli, needYear)
+    L <-  sg[1]:num_days(needYear, 6, 22)
+    DT <- data.frame(Day = L, Temp = year$TMEAN[L])
+    if (densityPlot == TRUE) {
+        plot(DT)
+        abline(lm(formula = DT$Temp ~ DT$Day, data=DT))
+        print(summary(lm(formula = DT$Temp ~ DT$Day, data=DT)))
+    }
+    DT.lm <- lm(formula = DT$Temp ~ DT$Day, data=DT)
+    return(as.numeric(DT.lm$coefficients[2])) # b1
 }
+
 # http://www.montefiore.ulg.ac.be/~kvansteen/GBIO0009-1/ac20092010/Class8/Using%20R%20for%20linear%20regression.pdf
 # https://ww2.coastal.edu/kingw/statistics/R-tutorials/simplelinear.html
-S <- SPEEDT(Minusinsk.cli, schc, 1965)
-cat("SPEED= ", S, "\n")
+# http://www.rpubs.com/smarcel/106230
+# https://www.r-bloggers.com/interpreting-regression-coefficient-in-r/
+#https://cran.r-project.org/doc/contrib/Shipunov-rbook.pdf
+S <- SPEEDT(Minusinsk.cli, 1969, densityPlot = TRUE)
+S
+
+#cat("SPEED= ", S, "\n")
+
 
 # The sum of temperatures from 22 June to transition through 0C at the end of
 # the season/temperatures from June 22 to transition through 5C at the end of
