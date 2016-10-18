@@ -1,0 +1,74 @@
+### Summary table on climate stations
+#### Iljin Victor, 13.10.2016
+```{r master_location}
+
+st.names <- c("Station_Code", "Station_Name", "Latitude", "Longitude", "Elevation", "Start_Y", 
+    " End_Y")
+st.names.alt <- c("wmo_xref", "city", "lat_prp", "lon_prp", "elev_baro", "start_year", "end_year")
+# http://meteocenter.net/_world_weather_stations.htm
+st <- read.csv("master-location-identifier-database-20130801.csv", header = TRUE, sep = ",", 
+    dec = ".")
+altai.code <- c(29998, 36229, 36231, 36246)
+altai.names <- c("ORLIK", "UST-KOKSA", "ONGUDAJ", "UST-ULAGAN")
+# Work with weather data <http://aisori.meteo.ru/ClimateR> [R]
+altai.aisori.files <- c("NA", "1", "NA", "NA")
+altai.files <- list.files(path = "cli/altai")
+
+lena.files <- list.files(path = "cli/lena")
+lena.code <- c("24051", "24261", "24643", "24652", "24668", "24768", "24859")
+
+lf <- list.files(path = "cli/north")
+north.code <- c(1:length(lf))
+for (i in 1:length(lf)) {
+    lf.ss <- substr(lf[i], 1, 5)
+    north.code[i] <- as.numeric(lf.ss)
+    cat(lf.ss, "\n")
+}
+sort(north.code)
+
+lf <- list.files(path = "cli/yenisei")
+yenisei.code <- c(1:length(lf))
+for (i in 1:length(lf)) {
+    lf.ss <- substr(lf[i], 1, 5)
+    yenisei.code[i] <- as.numeric(lf.ss)
+    cat(lf.ss, "\n")
+}
+sort(yenisei.code)
+
+getStationInfo <- function(stDF, stCode) {
+    L <- length(stDF[, 1])
+    for (i in 1:L) {
+        if (!is.na(stDF[i, 12])) {
+            # stDF$wmo_xref[i]
+            if (stDF[i, "wmo_xref"] == stCode) 
+                return(stDF[i, ])
+        }
+    }
+}
+
+# http://www.latlong.ru/
+# http://www.sur-base.ru/?p=map
+# http://meteoclub.ru/index.php?action=vthread&forum=16&topic=4021
+all.code <- c(altai.code,lena.code,north.code,yenisei.code)
+for (i in all.code) {
+    si <- getStationInfo(st, i)
+    cat(si$wmo,
+    as.character(si$city),
+    round(si$lat_prp,2),
+    round(si$lon_prp,2),
+    si$elev_baro, "\n")
+}
+
+
+```
+```{ read}
+
+```
+To refer to the array: 
+
+Bulygina O. N., Veselov V. M., Alexandrova, T. M., Korshunova N. N. "DESCRIPTION OF ARRAY DATA ON ATMOSPHERIC PHENOMENA AT THE METEOROLOGICAL STATIONS OF RUSSIA."
+The certificate of state registration database No. 2015620081
+<http://meteo.ru/data/345-atmosfernye-yavleniya-sroki>
+
+```{r}
+```
