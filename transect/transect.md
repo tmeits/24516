@@ -1,7 +1,10 @@
 
 ***
+### For each year-written function to calculate the 16 climatic characteristics
+
+#### This allowed to characterize each growing season 16-dimensional vector (Shishov V. V. table. 2.7.1, Chapter 2, p. 194)
+
 ### Author : Iljin Victor,  Date   : 31/09/2016
-### Liberation Mono 9pt
 ***
 
 
@@ -121,91 +124,6 @@ mean(is.na(Minusinsk.cli))
 ```
 ## [1] 0.04899137
 ```
-### Read data file VS-model
-
-```r
-# Read data file VS-model
-readCliBE <- function(url) {
-   schc <- read.csv(url, header = TRUE, 
-    sep = "", dec = ".")
-    return(schc)
-}
-schc <-  readCliBE(paste0(mm_path, "/1936_2009.dat"))
-schc <- schc[-c(2,3,4,5,6,9,10,11,12,13)]
-head(schc)
-```
-
-```
-##   year BG1 EG1
-## 1 1936 146 271
-## 2 1937 132 261
-## 3 1938 134 267
-## 4 1939 121 274
-## 5 1940 138 264
-## 6 1941 147 257
-```
-
-```r
-str(schc)
-```
-
-```
-## 'data.frame':	74 obs. of  3 variables:
-##  $ year: int  1936 1937 1938 1939 1940 1941 1942 1943 1944 1945 ...
-##  $ BG1 : int  146 132 134 121 138 147 152 127 144 124 ...
-##  $ EG1 : int  271 261 267 274 264 257 264 285 271 262 ...
-```
-
-```r
-# The calculation of duration in days growing season
-cat("The calculation of duration in days growing season\n", schc$EG1-schc$BG1,"\n")
-```
-
-```
-## The calculation of duration in days growing season
-##  125 129 133 153 126 110 112 158 127 138 135 117 136 138 127 138 127 122 121 137 123 116 131 133 126 132 132 125 131 145 129 132 105 119 127 120 140 124 128 125 127 121 124 143 120 137 134 107 144 137 132 141 123 120 132 135 129 119 138 126 115 155 133 144 128 143 125 136 135 133 141 156 130 158
-```
-
-```r
-summary(schc$EG1-schc$BG1)
-```
-
-```
-##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-##   105.0   124.2   130.5   130.7   137.0   158.0
-```
-
-```r
-summary(schc$EG1)
-```
-
-```
-##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-##   248.0   263.2   268.0   268.4   273.0   285.0
-```
-
-```r
-summary(schc$BG1)
-```
-
-```
-##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-##   116.0   132.0   138.5   137.7   144.8   157.0
-```
-
-```r
-# Reading of results VS model values for the beginning and end of the growing
-# season for all mod. years
-season_growthVS <- function(sgs, s.year) {
-    return(c(sgs[sgs$year == s.year, ]$BG1, sgs[sgs$year == s.year, ]$EG1))
-}
-S64 <- season_growthVS(schc, 1964)
-cat("Reading of results VS model ", S64, "\n")
-```
-
-```
-## Reading of results VS model  143 274
-```
 ### Utility functions
 
 ```r
@@ -251,11 +169,12 @@ seasonBG <- function(years, now) {
     yearL <- length(yearT)
     for (i in 1:yearL) {
         sumT <- sum(yearT[i:(i + 10)])
-        if (!is.na(sumT))
-            if (sumT >= 90)
+        if (!is.na(sumT)) 
+            if (sumT >= 90) 
                 return(i)
     }
-    if(i >= yearL) stop("invalid begin day")
+    if (i >= yearL) 
+        stop(paste("Invalid begin day", " Year=", now))
     return(i)
 }
 seasonBG(Minusinsk.cli, 1964)  # test
@@ -335,35 +254,8 @@ cat("Convert data as strung= ", DS, "\n")
 ```
 ## Convert data as strung=  2007-11-12
 ```
-### Graphics (computed on VS and V. S.) for years beginning and end of the growing season.
-
-```r
-plot(schc$year, schc$BG1)
-```
-
-![plot of chunk plot seasonBG_EG](figure/plot seasonBG_EG-1.png)
 ### Main functions
-
-| Num  | Function  | Resume |
-|---|---|---|
-| 1  |  The sum of temperatures from 22 June to transition through 0C at the end of  | FT2205 |
-| 2 |  The sum of temperatures from 22 June to transition through 5C at the end of | FT2205  |
-| 3 |   |   |
-| 4 |   |   |
-| 5 |   |   |
-| 6 |   |   |
-| 7 |   |   |
-| 8 |   |   |
-| 9 |   |   |
-| 10|   |   |
-| 11|   |   |
-| 12|   |   |
-| 13|   |   |
-| 14|   |   |
-| 15|   |   |
-| 16|   |   |
-
-
+       
 
 ```r
 # http://www.tablesgenerator.com/markdown_tables#
@@ -381,7 +273,7 @@ SPEEDT <- function(data.cli, needYear, densityPlot = FALSE) {
         print(summary(lm(formula = DT$Temp ~ DT$Day, data=DT)))
     }
     DT.lm <- lm(formula = DT$Temp ~ DT$Day, data=DT)
-    return(DT.lm$coefficients[2]) # b1
+    return(as.numeric(DT.lm$coefficients[2])) # b1
 }
 
 # http://www.montefiore.ulg.ac.be/~kvansteen/GBIO0009-1/ac20092010/Class8/Using%20R%20for%20linear%20regression.pdf
@@ -420,8 +312,7 @@ S
 ```
 
 ```
-##    DT$Day 
-## 0.2841931
+## [1] 0.2841931
 ```
 
 ```r
@@ -636,7 +527,7 @@ cat("MDAT= ", MD, MDS, "\n")
 ```
 ## MDAT=  24 7 1964 24-7-1964
 ```
-### EVAL16CLIPARS
+### Main function eval16CliPars
 
 ```r
 eval16CliPars <- function(stationCode, data.cli, data.calc, beginYear, endYear) {
@@ -695,7 +586,8 @@ eval16CliPars <- function(stationCode, data.cli, data.calc, beginYear, endYear) 
         df16$FT220[i] <- FT2205(data.cli, data.calc, period[i])
         df16$FT225[i] <- FT2205(data.cli, data.calc, period[i], temp.c = 5)
         # The rate of temperature rise of (Скорость подъема температуры)
-        df16$SPEEDT[i] <- SPEEDT(data.cli, data.calc, period[i])
+        df16$SPEEDT[i] <- SPEEDT(data.cli, period[i])
+        #df16$SPEEDT[i] <- 4.5
         # Сумма осадков в течение сезона роста
         df16$SUMPREC[i] <- SUMPREC(data.cli, data.calc, period[i])
     }
@@ -713,27 +605,13 @@ eval16CliPars <- function(stationCode, data.cli, data.calc, beginYear, endYear) 
 
 ```r
 require(pracma)
-```
-
-```
-## Loading required package: pracma
-```
-
-```r
 tic()
 E <- eval16CliPars("23365", Minusinsk.cli, Minusinsk.cli, 1936, 2013)
-```
-
-```
-## Error in seasonBG(data.cli, needYear): invalid begin day
-```
-
-```r
 toc()
 ```
 
 ```
-## elapsed time is 2.230000 seconds
+## elapsed time is 110.630000 seconds
 ```
 
 ```r
@@ -741,7 +619,27 @@ str(E)
 ```
 
 ```
-## Error in str(E): object 'E' not found
+## 'data.frame':	78 obs. of  20 variables:
+##  $ Station_Code: chr  "23365" "23365" "23365" "23365" ...
+##  $ Year        : int  1936 1937 1938 1939 1940 1941 1942 1943 1944 1945 ...
+##  $ StartD      : num  129 120 121 105 115 127 109 103 108 98 ...
+##  $ EndD        : num  294 281 283 282 286 285 280 288 276 295 ...
+##  $ STDAT0      : chr  "8-5-1936" "1-5-1937" "1-5-1938" "15-4-1939" ...
+##  $ STDAT5      : chr  "16-5-1936" "4-5-1937" "8-5-1938" "23-4-1939" ...
+##  $ FDAT0       : chr  "20-10-1936" "8-10-1937" "10-10-1938" "9-10-1939" ...
+##  $ FDAT5       : chr  "20-10-1936" "3-10-1937" "5-10-1938" "9-10-1939" ...
+##  $ INTER0      : num  165 160 162 177 170 158 170 182 168 195 ...
+##  $ INTER5      : num  165 153 155 176 165 152 168 182 160 195 ...
+##  $ MAXT        : num  36.8 34.4 32.4 37.7 34.5 34.5 33.7 36.4 35.5 35.3 ...
+##  $ MDAT        : chr [1:78(1d)] "1-7-1936" "5-8-1937" "14-7-1938" "13-8-1939" ...
+##  $ SUMT0       : num  2217 2288 2392 2609 2515 ...
+##  $ SUMT5       : num  2103 2183 2285 2540 2418 ...
+##  $ T220        : num  561 699 796 863 863 ...
+##  $ T225        : num  508 683 740 838 816 ...
+##  $ FT220       : num  1623 1527 1539 1729 1646 ...
+##  $ FT225       : num  1587 1492 1520 1705 1610 ...
+##  $ SPEEDT      : num  0.152 0.248 0.175 0.167 0.208 ...
+##  $ SUMPREC     : num  399 274 316 239 207 ...
 ```
 
 ```r
@@ -749,7 +647,27 @@ head(E)
 ```
 
 ```
-## Error in head(E): object 'E' not found
+##   Station_Code Year StartD EndD    STDAT0    STDAT5      FDAT0      FDAT5
+## 1        23365 1936    129  294  8-5-1936 16-5-1936 20-10-1936 20-10-1936
+## 2        23365 1937    120  281  1-5-1937  4-5-1937  8-10-1937  3-10-1937
+## 3        23365 1938    121  283  1-5-1938  8-5-1938 10-10-1938  5-10-1938
+## 4        23365 1939    105  282 15-4-1939 23-4-1939  9-10-1939  9-10-1939
+## 5        23365 1940    115  286 24-4-1940 26-4-1940 11-10-1940  6-10-1940
+## 6        23365 1941    127  285  7-5-1941 11-5-1941 12-10-1941  8-10-1941
+##   INTER0 INTER5 MAXT      MDAT  SUMT0  SUMT5  T220  T225  FT220  FT225
+## 1    165    165 36.8  1-7-1936 2217.4 2103.3 560.9 507.7 1622.5 1587.0
+## 2    160    153 34.4  5-8-1937 2288.2 2183.2 699.1 682.6 1526.5 1491.8
+## 3    162    155 32.4 14-7-1938 2391.7 2284.9 795.8 740.3 1538.6 1520.0
+## 4    177    176 37.7 13-8-1939 2609.2 2540.1 863.3 838.4 1729.0 1705.5
+## 5    170    165 34.5  3-8-1940 2514.9 2418.0 863.4 815.8 1646.0 1610.1
+## 6    158    152 34.5  7-6-1941 2436.3 2294.1 799.5 728.5 1615.0 1583.9
+##      SPEEDT SUMPREC
+## 1 0.1518050   398.7
+## 2 0.2478229   274.4
+## 3 0.1745496   316.3
+## 4 0.1672214   238.9
+## 5 0.2078375   207.2
+## 6 0.3158557   197.6
 ```
 
 ```r
@@ -757,7 +675,48 @@ summary(E)
 ```
 
 ```
-## Error in summary(E): object 'E' not found
+##  Station_Code            Year          StartD           EndD      
+##  Length:78          Min.   :1936   Min.   : 97.0   Min.   :129.0  
+##  Class :character   1st Qu.:1955   1st Qu.:110.0   1st Qu.:281.0  
+##  Mode  :character   Median :1974   Median :116.5   Median :284.0  
+##                     Mean   :1974   Mean   :116.1   Mean   :282.7  
+##                     3rd Qu.:1994   3rd Qu.:121.8   3rd Qu.:288.0  
+##                     Max.   :2013   Max.   :138.0   Max.   :304.0  
+##     STDAT0             STDAT5             FDAT0          
+##  Length:78          Length:78          Length:78         
+##  Class :character   Class :character   Class :character  
+##  Mode  :character   Mode  :character   Mode  :character  
+##                                                          
+##                                                          
+##                                                          
+##     FDAT5               INTER0          INTER5           MAXT      
+##  Length:78          Min.   : 18.0   Min.   : 17.0   Min.   :31.90  
+##  Class :character   1st Qu.:161.0   1st Qu.:155.0   1st Qu.:34.00  
+##  Mode  :character   Median :167.0   Median :163.0   Median :34.70  
+##                     Mean   :165.8   Mean   :161.9   Mean   :34.95  
+##                     3rd Qu.:176.0   3rd Qu.:171.8   3rd Qu.:35.67  
+##                     Max.   :198.0   Max.   :195.0   Max.   :39.30  
+##      MDAT               SUMT0          SUMT5           T220       
+##  Length:78          Min.   :2217   Min.   :2103   Min.   : 560.9  
+##  Class :array       1st Qu.:2449   1st Qu.:2344   1st Qu.: 773.0  
+##  Mode  :character   Median :2541   Median :2433   Median : 832.1  
+##                     Mean   :2560   Mean   :2454   Mean   : 843.3  
+##                     3rd Qu.:2659   3rd Qu.:2560   3rd Qu.: 923.1  
+##                     Max.   :2866   Max.   :2780   Max.   :1048.0  
+##       T225           FT220            FT225            SPEEDT       
+##  Min.   :507.7   Min.   : 646.3   Min.   : 636.5   Min.   :0.07597  
+##  1st Qu.:717.4   1st Qu.:1623.1   1st Qu.:1603.1   1st Qu.:0.16758  
+##  Median :775.8   Median :1677.8   Median :1646.5   Median :0.21338  
+##  Mean   :788.9   Mean   :1669.5   Mean   :1646.1   Mean   :0.21160  
+##  3rd Qu.:864.1   3rd Qu.:1741.5   3rd Qu.:1715.4   3rd Qu.:0.25041  
+##  Max.   :999.4   Max.   :1932.7   Max.   :1884.9   Max.   :0.46905  
+##     SUMPREC     
+##  Min.   : 12.0  
+##  1st Qu.:237.0  
+##  Median :261.9  
+##  Mean   :266.1  
+##  3rd Qu.:299.8  
+##  Max.   :459.4
 ```
 
 ```r
@@ -777,10 +736,6 @@ write_eval_clipars <- function(filename.full, df.eval) {
 }
 write_eval_clipars(paste0(mm_path, '/23365.csv'), E)
 ```
-
-```
-## Error in is.data.frame(x): object 'E' not found
-```
 ### WriteXLSX
   + <https://github.com/stan-dev/rstan/wiki/Install-Rtools-for-Windows>
   + <https://cran.r-project.org/bin/windows/Rtools/>
@@ -793,13 +748,6 @@ write_eval_clipars(paste0(mm_path, '/23365.csv'), E)
 #Sys.setenv("R_ZIPCMD" = "C:/Rtools/bin/zip.exe") ## path to zip.exe
 Sys.setenv(R_ZIPCMD = paste0(mm_path, "/bin/zip.exe"))  ## path to zip.exe
 require(openxlsx)
-```
-
-```
-## Loading required package: openxlsx
-```
-
-```r
 # test data.frame's
 testWriteReadXLSX <- function(listDF, fileName, sheet = 1) {
     openxlsx::write.xlsx(listDF, file = fileName)
@@ -836,23 +784,31 @@ head(WR)
 
 ```r
 WR <- testWriteReadXLSX(list(E, testListDF[1]), paste0(mm_path, "/23365.xlsx"), sheet = 1)
-```
-
-```
-## Error in match(x, table, nomatch = 0L): object 'E' not found
-```
-
-```r
 str(WR)
 ```
 
 ```
-## 'data.frame':	150 obs. of  5 variables:
-##  $ Sepal.Length: num  5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
-##  $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
-##  $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
-##  $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
-##  $ Species     : chr  "setosa" "setosa" "setosa" "setosa" ...
+## 'data.frame':	78 obs. of  20 variables:
+##  $ Station_Code: chr  "23365" "23365" "23365" "23365" ...
+##  $ Year        : num  1936 1937 1938 1939 1940 ...
+##  $ StartD      : num  129 120 121 105 115 127 109 103 108 98 ...
+##  $ EndD        : num  294 281 283 282 286 285 280 288 276 295 ...
+##  $ STDAT0      : chr  "8-5-1936" "1-5-1937" "1-5-1938" "15-4-1939" ...
+##  $ STDAT5      : chr  "16-5-1936" "4-5-1937" "8-5-1938" "23-4-1939" ...
+##  $ FDAT0       : chr  "20-10-1936" "8-10-1937" "10-10-1938" "9-10-1939" ...
+##  $ FDAT5       : chr  "20-10-1936" "3-10-1937" "5-10-1938" "9-10-1939" ...
+##  $ INTER0      : num  165 160 162 177 170 158 170 182 168 195 ...
+##  $ INTER5      : num  165 153 155 176 165 152 168 182 160 195 ...
+##  $ MAXT        : num  36.8 34.4 32.4 37.7 34.5 34.5 33.7 36.4 35.5 35.3 ...
+##  $ MDAT        : chr  "1-7-1936" "5-8-1937" "14-7-1938" "13-8-1939" ...
+##  $ SUMT0       : num  2217 2288 2392 2609 2515 ...
+##  $ SUMT5       : num  2103 2183 2285 2540 2418 ...
+##  $ T220        : num  561 699 796 863 863 ...
+##  $ T225        : num  508 683 740 838 816 ...
+##  $ FT220       : num  1622 1526 1539 1729 1646 ...
+##  $ FT225       : num  1587 1492 1520 1706 1610 ...
+##  $ SPEEDT      : num  0.152 0.248 0.175 0.167 0.208 ...
+##  $ SUMPREC     : num  399 274 316 239 207 ...
 ```
 
 ```r
@@ -860,13 +816,27 @@ head(WR)
 ```
 
 ```
-##   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
-## 1          5.1         3.5          1.4         0.2  setosa
-## 2          4.9         3.0          1.4         0.2  setosa
-## 3          4.7         3.2          1.3         0.2  setosa
-## 4          4.6         3.1          1.5         0.2  setosa
-## 5          5.0         3.6          1.4         0.2  setosa
-## 6          5.4         3.9          1.7         0.4  setosa
+##   Station_Code Year StartD EndD    STDAT0    STDAT5      FDAT0      FDAT5
+## 1        23365 1936    129  294  8-5-1936 16-5-1936 20-10-1936 20-10-1936
+## 2        23365 1937    120  281  1-5-1937  4-5-1937  8-10-1937  3-10-1937
+## 3        23365 1938    121  283  1-5-1938  8-5-1938 10-10-1938  5-10-1938
+## 4        23365 1939    105  282 15-4-1939 23-4-1939  9-10-1939  9-10-1939
+## 5        23365 1940    115  286 24-4-1940 26-4-1940 11-10-1940  6-10-1940
+## 6        23365 1941    127  285  7-5-1941 11-5-1941 12-10-1941  8-10-1941
+##   INTER0 INTER5 MAXT      MDAT  SUMT0  SUMT5  T220  T225  FT220  FT225
+## 1    165    165 36.8  1-7-1936 2217.4 2103.3 560.9 507.7 1622.5 1587.0
+## 2    160    153 34.4  5-8-1937 2288.2 2183.2 699.1 682.6 1526.5 1491.8
+## 3    162    155 32.4 14-7-1938 2391.7 2284.9 795.8 740.3 1538.6 1520.0
+## 4    177    176 37.7 13-8-1939 2609.2 2540.1 863.3 838.4 1729.0 1705.5
+## 5    170    165 34.5  3-8-1940 2514.9 2418.0 863.4 815.8 1646.0 1610.1
+## 6    158    152 34.5  7-6-1941 2436.3 2294.1 799.5 728.5 1615.0 1583.9
+##      SPEEDT SUMPREC
+## 1 0.1518050   398.7
+## 2 0.2478229   274.4
+## 3 0.1745496   316.3
+## 4 0.1672214   238.9
+## 5 0.2078375   207.2
+## 6 0.3158557   197.6
 ```
 ### Summary table on climate stations
 
