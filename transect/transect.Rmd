@@ -1,7 +1,10 @@
 
 ***
+### For each year-written function to calculate the 16 climatic characteristics
+
+#### This allowed to characterize each growing season 16-dimensional vector (Shishov V. V. table. 2.7.1, Chapter 2, p. 194)
+
 ### Author : Iljin Victor,  Date   : 31/09/2016
-### Liberation Mono 9pt
 ***
 
 ```{r transect_set_path}
@@ -49,34 +52,6 @@ summary(Minusinsk.cli)
 sum(is.na(Minusinsk.cli))
 mean(is.na(Minusinsk.cli))
 ```
-### Read data file VS-model
-```{r VS}
-# Read data file VS-model
-readCliBE <- function(url) {
-   schc <- read.csv(url, header = TRUE, 
-    sep = "", dec = ".")
-    return(schc)
-}
-schc <-  readCliBE(paste0(mm_path, "/1936_2009.dat"))
-schc <- schc[-c(2,3,4,5,6,9,10,11,12,13)]
-head(schc)
-str(schc)
-
-# The calculation of duration in days growing season
-cat("The calculation of duration in days growing season\n", schc$EG1-schc$BG1,"\n")
-summary(schc$EG1-schc$BG1)
-summary(schc$EG1)
-summary(schc$BG1)
-
-# Reading of results VS model values for the beginning and end of the growing
-# season for all mod. years
-season_growthVS <- function(sgs, s.year) {
-    return(c(sgs[sgs$year == s.year, ]$BG1, sgs[sgs$year == s.year, ]$EG1))
-}
-S64 <- season_growthVS(schc, 1964)
-cat("Reading of results VS model ", S64, "\n")
-
-```
 ### Utility functions
 ```{r utility}
 
@@ -97,11 +72,12 @@ seasonBG <- function(years, now) {
     yearL <- length(yearT)
     for (i in 1:yearL) {
         sumT <- sum(yearT[i:(i + 10)])
-        if (!is.na(sumT))
-            if (sumT >= 90)
+        if (!is.na(sumT)) 
+            if (sumT >= 90) 
                 return(i)
     }
-    if(i >= yearL) stop("invalid begin day")
+    if (i >= yearL) 
+        stop(paste("Invalid begin day", " Year=", now))
     return(i)
 }
 seasonBG(Minusinsk.cli, 1964)  # test
@@ -152,33 +128,10 @@ date2string <- function(cDate) {
 }
 DS <- date2string(c(2007, 11, 12))
 cat("Convert data as strung= ", DS, "\n")
-```
-### Graphics (computed on VS and V. S.) for years beginning and end of the growing season.
-```{r plot seasonBG_EG}
-plot(schc$year, schc$BG1)
+
 ```
 ### Main functions
-
-| Num  | Function  | Resume |
-|---|---|---|
-| 1  |  The sum of temperatures from 22 June to transition through 0C at the end of  | FT2205 |
-| 2 |  The sum of temperatures from 22 June to transition through 5C at the end of | FT2205  |
-| 3 |   |   |
-| 4 |   |   |
-| 5 |   |   |
-| 6 |   |   |
-| 7 |   |   |
-| 8 |   |   |
-| 9 |   |   |
-| 10|   |   |
-| 11|   |   |
-| 12|   |   |
-| 13|   |   |
-| 14|   |   |
-| 15|   |   |
-| 16|   |   |
-
-
+       
 ```{r Main16}
 # http://www.tablesgenerator.com/markdown_tables#
 # SpeedT is the speed of the temperature rise since the beginning of the growing season until June 22 (the summer solstice). In fact, it is necessary to take daily temperature (time series with daily temperatures) since the beginning of the growing season (e.g. may 25) until June 22 and build for the temperature Tem trend line (i.e. the regression equation of the form=a+bt, where t is day, a and b are regression coefficients). In this case, SpeedT is the same as the coefficient b.
@@ -366,8 +319,8 @@ MDS <- date2string(MD)
 cat("MDAT= ", MD, MDS, "\n")
 
 ```
-### EVAL16CLIPARS
-```{r eval16}
+### Main function eval16CliPars
+```{r eval16CliPars}
 eval16CliPars <- function(stationCode, data.cli, data.calc, beginYear, endYear) {
     period <- beginYear: endYear # the calculation of the number of observations 
     l <- length(period)
@@ -424,7 +377,8 @@ eval16CliPars <- function(stationCode, data.cli, data.calc, beginYear, endYear) 
         df16$FT220[i] <- FT2205(data.cli, data.calc, period[i])
         df16$FT225[i] <- FT2205(data.cli, data.calc, period[i], temp.c = 5)
         # The rate of temperature rise of (Скорость подъема температуры)
-        df16$SPEEDT[i] <- SPEEDT(data.cli, data.calc, period[i])
+        df16$SPEEDT[i] <- SPEEDT(data.cli, period[i])
+        #df16$SPEEDT[i] <- 4.5
         # Сумма осадков в течение сезона роста
         df16$SUMPREC[i] <- SUMPREC(data.cli, data.calc, period[i])
     }
