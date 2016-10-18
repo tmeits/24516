@@ -45,19 +45,29 @@ getStationInfo <- function(stDF, stCode) {
         }
     }
 }
-
 # http://www.latlong.ru/
 # http://www.sur-base.ru/?p=map
 # http://meteoclub.ru/index.php?action=vthread&forum=16&topic=4021
 all.code <- c(altai.code,lena.code,north.code,yenisei.code)
-for (i in all.code) {
-    si <- getStationInfo(st, i)
-    cat(si$wmo,
-    as.character(si$city),
-    round(si$lat_prp,2),
-    round(si$lon_prp,2),
-    si$elev_baro, "\n")
+length(all.code)
+ML <- matrix(c(1:(length(all.code) * 7)), nrow = length(all.code), ncol = 7, byrow = TRUE)
+ml.df <- as.data.frame(ML)  #  converted to dataframe
+ml.df <- setNames(ml.df, st.names)
+ml.df <- setNames(ml.df, st.names.alt)  # assign names to the columns
+for (i in 1:length(all.code)) {
+    si <- getStationInfo(st, all.code[i])
+    cat(si$wmo, as.character(si$city), round(si$lat_prp, 2), round(si$lon_prp, 2), si$elev_baro, 
+        "\n")
+    ml.df[i, 1] <- si$wmo
+    ml.df[i, 2] <- as.character(si$city)
+    ml.df[i, 3] <- round(si$lat_prp, 2)
+    ml.df[i, 4] <- round(si$lon_prp, 2)
+    ml.df[i, 5] <- si$elev_baro
+    ml.df[i, 6] <- NA
+    ml.df[i, 7] <- NA
 }
+
+
 
 
 ```
