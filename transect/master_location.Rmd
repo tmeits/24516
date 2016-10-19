@@ -10,14 +10,17 @@ st <- read.csv("master-location-identifier-database-20130801.csv", header = TRUE
     dec = ".")
 altai.code <- c(29998, 36229, 36231, 36246)
 altai.names <- c("ORLIK", "UST-KOKSA", "ONGUDAJ", "UST-ULAGAN")
+sort(altai.code)
 # Work with weather data <http://aisori.meteo.ru/ClimateR> [R]
 altai.aisori.files <- c("NA", "1", "NA", "NA")
 altai.files <- list.files(path = "cli/altai")
 
 lena.files <- list.files(path = "cli/lena")
 lena.code <- c("24051", "24261", "24643", "24652", "24668", "24768", "24859")
+sort(lena.code)
 
 lf <- list.files(path = "cli/north")
+north.files <- list.files(path = "cli/north")
 north.code <- c(1:length(lf))
 for (i in 1:length(lf)) {
     lf.ss <- substr(lf[i], 1, 5)
@@ -27,6 +30,7 @@ for (i in 1:length(lf)) {
 sort(north.code)
 
 lf <- list.files(path = "cli/yenisei")
+yenisei.files <- list.files(path = "cli/yenisei")
 yenisei.code <- c(1:length(lf))
 for (i in 1:length(lf)) {
     lf.ss <- substr(lf[i], 1, 5)
@@ -48,12 +52,15 @@ getStationInfo <- function(stDF, stCode) {
 # http://www.latlong.ru/
 # http://www.sur-base.ru/?p=map
 # http://meteoclub.ru/index.php?action=vthread&forum=16&topic=4021
-all.code <- c(altai.code,lena.code,north.code,yenisei.code)
+all.code <- c(altai.code, lena.code, north.code, yenisei.code)
+all.code <- sort(as.numeric(all.code))
+all.code
 length(all.code)
 ML <- matrix(c(1:(length(all.code) * 7)), nrow = length(all.code), ncol = 7, byrow = TRUE)
 ml.df <- as.data.frame(ML)  #  converted to dataframe
 ml.df <- setNames(ml.df, st.names)
 ml.df <- setNames(ml.df, st.names.alt)  # assign names to the columns
+str(ml.df)
 for (i in 1:length(all.code)) {
     si <- getStationInfo(st, all.code[i])
     cat(si$wmo, as.character(si$city), round(si$lat_prp, 2), round(si$lon_prp, 2), si$elev_baro, 
@@ -65,14 +72,41 @@ for (i in 1:length(all.code)) {
     ml.df[i, 5] <- si$elev_baro
     ml.df[i, 6] <- NA
     ml.df[i, 7] <- NA
+    if(all.code[i] == 24152){
+    ml.df[i, 5] <- 3
+       ml.df[i, 2] <- "XZ}"
+    }
+    if(all.code[i] == 38401)  ml.df[i, 5] <- 3
+    if(all.code[i] == 23077)  ml.df[i, 5] <- 2
 }
-
-
-
-
+str(ml.df)
+ml.df.backup <- ml.df
 ```
+#### Read the files at the stations and determination of years
 ```{ read}
 
+addPeriod <- function(dfPTransect, path, listFiles) {
+    dfTransect <- dfPTransect
+    for (i in 1:length(listFiles)) {
+        Al <- read.csv(paste0(path,listFiles[i]), header = FALSE, sep = "", dec = ".")
+        cat("\nRead (", i, ")", listFiles[i], "\n")
+        cat(Al[length(Al[,3]), 3],  Al[1, 3], "\n")
+        dfTransect[dfTransect$wmo_xref == as.numeric(substr(listFiles[i], 1, 5)), ]$end_year <- Al[length(Al[, 3]), 3]
+        dfTransect[dfTransect$wmo_xref == as.numeric(substr(listFiles[i], 1, 5)), ]$start_year <- Al[1, 3]
+    }
+    return(dfTransect)
+}
+ml.df <- ml.df.backup
+ml.df <- addPeriod(ml.df, paste0(getwd(), "/cli/altai/"), altai.files)
+ml.df <- addPeriod(ml.df, paste0(getwd(), "/cli/lena/"), lena.files)
+ml.df <- addPeriod(ml.df, paste0(getwd(), "/cli/north/"), north.files)
+ml.df <- addPeriod(ml.df, paste0(getwd(), "/cli/yenisei/"), yenisei.files)
+head(ml.df) 
+print("Read done...")
+```
+#### writeXLSX
+```{r writeXLSX}
+print("Write done...")
 ```
 To refer to the array: 
 
@@ -81,4 +115,5 @@ The certificate of state registration database No. 2015620081
 <http://meteo.ru/data/345-atmosfernye-yavleniya-sroki>
 
 ```{r}
+print("End.")
 ```
