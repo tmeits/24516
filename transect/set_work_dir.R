@@ -1,7 +1,7 @@
 #===============================================================================
 # Name   : Set the absolute path of the project to dropbox for different workstations
-# Author : IVA
-# Date   : 18.10/2016
+# Author : tmeits
+# Date   : 18.10.2016
 #===============================================================================
 
 ## Set work path
@@ -26,5 +26,14 @@ setWorkDir <- function(osVersion) {
 mm_path <- setWorkDir(getOsVersion())
 mm_path
 
+# knitr: run all chunks in an Rmarkdown document                              
+runAllChunks <- function(rmd, envir = globalenv()) {
+    tempR <- tempfile(tmpdir = ".", fileext = ".R")
+    on.exit(unlink(tempR))
+    knitr::purl(rmd, output = tempR)
+    sys.source(tempR, envir = envir)
+    unlink(tempR)
+}
+#runAllChunks("transect.Rmd")
 
 
