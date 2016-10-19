@@ -32,7 +32,7 @@ runAllChunks <- function(rmd, envir = globalenv()) {
     on.exit(unlink(tempR))
     knitr::purl(rmd, output = tempR)
     sys.source(tempR, envir = envir)
-    unlink(tempR)
+    #unlink(tempR)
 }
 #runAllChunks("transect.Rmd")
 
