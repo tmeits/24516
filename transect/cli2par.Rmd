@@ -1,0 +1,47 @@
+***
+###
+#### Iljin Victor, 13.10.2016
+***
+  + download scripts with calculation functions
+  + reading climate data of the weather station
+  + cleaning missing values 
+  + The calculation of climatic parameters
+  + Record results in a spreadsheet 
+
+```{r begin}
+source("https://raw.githubusercontent.com/tmeits/24516/master/transect/set_work_dir.R")
+# downloadable list of files containing climatic measurements
+altai.files <- list.files(path = "cli/altai")
+lena.files <- list.files(path = "cli/lena")
+north.files <- list.files(path = "cli/north")
+yenisei.files <- list.files(path = "cli/yenisei")
+
+all.files <- sort(c(altai.files, lena.files, north.files, yenisei.files))
+all.files
+cli2par <- function(path, listFiles, info = TRUE) {
+    for (i in 1:length(listFiles)) {
+        D <- read.csv(paste0(path, listFiles[i]), header = FALSE, sep = "", dec = ".")
+        # The names of each column assign
+        D <- setNames(D, c("Day", "Month", "Year", "PRECIP", "TMEAN"))
+        if (info == TRUE) {
+            print("***************************************************************")
+            print(paste0(path, listFiles[i]))
+            # Delete the rows contains the number -9999
+            na <- abs(length(D[D$PRECIP != -9999, ][, 1]) - length(D[, 1]))
+            cat("The number of deleted rows by column precipitation=", na, "\n")
+            D <- D[D$PRECIP != -9999, ]
+            print(listFiles[i])
+            print(tail(D))
+            print(str(D))
+            print(summary(D[4:5]))
+            print("***************************************************************")
+        }
+        # get rid of all observations with missing data
+    }
+}
+
+cli2par(paste0(mm_path, "/cli/altai/"), altai.files)
+
+
+
+```
