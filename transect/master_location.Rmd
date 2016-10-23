@@ -1,7 +1,7 @@
 ### Summary table on climate stations
 #### Iljin Victor, 13.10.2016
 ```{r master_location}
-
+source("https://raw.githubusercontent.com/tmeits/24516/master/transect/set_work_dir.R")
 st.names <- c("Station_Code", "Station_Name", "Latitude", "Longitude", "Elevation", "Start_Y", 
     " End_Y")
 st.names.alt <- c("wmo_xref", "city", "lat_prp", "lon_prp", "elev_baro", "start_year", "end_year")
@@ -106,6 +106,11 @@ print("Read done...")
 ```
 #### writeXLSX
 ```{r writeXLSX}
+Sys.setenv(R_ZIPCMD = paste0(getwd(), "/bin/zip.exe"))  ## path to zip.exe
+require(openxlsx)
+openxlsx::write.xlsx(ml.df, file = "master_location.xlsx")
+
+
 print("Write done...")
 ```
 To refer to the array: 
@@ -115,5 +120,6 @@ The certificate of state registration database No. 2015620081
 <http://meteo.ru/data/345-atmosfernye-yavleniya-sroki>
 
 ```{r}
+#runAllChunks("master_location.Rmd")
 print("End.")
 ```
