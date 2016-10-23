@@ -1,5 +1,5 @@
 ***
-###
+###  The calculation of the sixteen climatic characteristics for all of the weather stations included in the transect
 #### Iljin Victor, 13.10.2016
 ***
   + download scripts with calculation functions
@@ -30,18 +30,57 @@ cli2par <- function(path, listFiles, info = TRUE) {
             na <- abs(length(D[D$PRECIP != -9999, ][, 1]) - length(D[, 1]))
             cat("The number of deleted rows by column precipitation=", na, "\n")
             D <- D[D$PRECIP != -9999, ]
-            print(listFiles[i])
+            na <- abs(length(D[D$TMEAN != -9999, ][, 1]) - length(D[, 1]))
+            cat("The number of deleted rows by column temp=", na, "\n")
+            D <- D[D$TMEAN != -9999, ]
             print(tail(D))
             print(str(D))
             print(summary(D[4:5]))
             print("***************************************************************")
+        } else {
+            # Delete the rows contains the number -9999
+            na <- abs(length(D[D$PRECIP != -9999, ][, 1]) - length(D[, 1]))
+            D <- D[D$PRECIP != -9999, ]
+            na <- abs(length(D[D$TMEAN != -9999, ][, 1]) - length(D[, 1]))
+            D <- D[D$TMEAN != -9999, ]
         }
         # get rid of all observations with missing data
+        D <- na.omit(D)
+        endYear <- D[length(D[, 3]), 3]
+        startYear <- D[1, 3]
+        if (info == TRUE) {
+            require(pracma)
+            tic()
+            E <- eval16CliPars("23365", D, D, startYear, endYear)
+            toc()
+            str(E)
+            head(E)
+            summary(E)
+        } else {
+            E <- eval16CliPars("23365", D, D, startYear, endYear)
+        }
+        # WriteXLSX
+        Sys.setenv(R_ZIPCMD = paste0(path, "/bin/zip.exe"))  ## path to zip.exe
+        require(openxlsx)
+        #openxlsx::write.xlsx(listDF, file = paste0(path,"/cli2par/",listFiles[i]),".xlsx")
+        
     }
 }
 
-cli2par(paste0(mm_path, "/cli/altai/"), altai.files)
+cli2par(paste0(mm_path, "/cli/altai/"), altai.files[4], info = TRUE)
+
 
 
 
 ```
+
+
+
+
+
+
+
+
+
+
+
