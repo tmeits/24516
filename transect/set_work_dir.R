@@ -34,13 +34,13 @@ runAllChunks <- function(rmd, envir = globalenv()) {
     sys.source(tempR, envir = envir)
     unlink(tempR)
 }
-Rmd2R <- function(rmd, envir = globalenv()) {
-    tempR <- tempfile(tmpdir = ".", fileext = ".R")
-    on.exit(unlink(tempR))
-    knitr::purl(rmd, output = tempR)
-    #sys.source(tempR, envir = envir)
-    #unlink(tempR)
+Rmd2R <- function(rmdFile, RFile) {
+    require(knitr)
+    knitr::purl(rmdFile, RFile)
 }
 #runAllChunks("transect.Rmd")
+.TT <- TRUE
+#Rmd2R("cli2par.Rmd", output = "cli2par.R")
+
 
 
