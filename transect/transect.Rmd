@@ -59,9 +59,18 @@ mean(is.na(Minusinsk.cli))
 get_one_year <- function(years, now) {
     return(years[years$Year == now, ])
 }
-Y64 <- get_one_year(Minusinsk.cli, 1964) # test
-head(Y64)
-summary(Y64[, 5:8])
+if (.TT == TRUE) {
+    Y64 <- get_one_year(Minusinsk.cli, 1964)  # test
+    head(Y64)
+    summary(Y64[, 5:8])
+}
+
+# The number of days of observation per year
+numberObservation <- function(years, now){
+    Y <-     get_one_year(years, now)
+    return(length(Y[,1]))
+}
+if (.TT == TRUE) cat("numberObservation ", 1964, numberObservation(Minusinsk.cli, 1964),"\n")
 
 # Assume the beginning of growing season the total transition temperature sumT for 10 consecutive days using a threshold value of 90 degrees Celsius. Then the beginning of the growing season can be considered the first day in this sequence, when conditions will be made (i.e., sumT>=90).
 # the beginning of the growing season
@@ -217,8 +226,8 @@ T2205 <- function(data.cli, data.calc, s.year, temp.c = 0) {
     nd <- num_days(s.year, 6, 22)
     sum_temp <- 0
     if (length(year[, 1]) < nd) {
-        nd <- length(year[, 1])
         cat("WARNING: T2205 num_days= ", nd, "lenYear= ", length(year[, 1]), " \n")
+        nd <- length(year[, 1])
     }
     for (i in 1:nd) {
         if (year[i, ]$TMEAN > temp.c) {
@@ -354,16 +363,21 @@ cat("MDAT= ", MD, MDS, "\n")
 ```
 ### Main function eval16CliPars
 ```{r eval16CliPars}
+.TT16 <- FALSE
+catE <- function(str) {
+    if (.TT16 == TRUE) 
+        cat(str)
+}
+# full function 
 eval16CliPars <- function(stationCode, data.cli, data.calc, beginYear, endYear) {
-    period <- beginYear: endYear # the calculation of the number of observations 
+    period <- beginYear:endYear  # the calculation of the number of observations 
     l <- length(period)
     # the creation of a matrix of l rows and 16 columns
-    m16 <- matrix(c(1:(l * (16+4))), nrow = l, ncol = (16+4), byrow = TRUE)
+    m16 <- matrix(c(1:(l * (16 + 4))), nrow = l, ncol = (16 + 4), byrow = TRUE)
     m16.df <- as.data.frame(m16)  #  converted to dataframe
     fistCol <- c("Station_Code", "Year", "StartD", "EndD")
-    lastCol <- c("STDAT0", "STDAT5", "FDAT0", "FDAT5", "INTER0", 
-        "INTER5", "MAXT", "MDAT", "SUMT0", "SUMT5", "T220", "T225", "FT220", "FT225", 
-        "SPEEDT", "SUMPREC") 
+    lastCol <- c("STDAT0", "STDAT5", "FDAT0", "FDAT5", "INTER0", "INTER5", "MAXT", "MDAT", "SUMT0", 
+        "SUMT5", "T220", "T225", "FT220", "FT225", "SPEEDT", "SUMPREC")
     # assign names to the columns
     df16 <- setNames(m16.df, c(fistCol, lastCol))
     # the task is to determine the data type of each column
@@ -375,50 +389,58 @@ eval16CliPars <- function(stationCode, data.cli, data.calc, beginYear, endYear) 
     df16$MDAT <- as.character(df16$MDAT)
     cat("Start eval16CliPars\n")
     for (i in 1:l) {
-        cat("*******************  ", period[i],"******************************\n")
+        cat("****************Year=", period[i], "Observation=",numberObservation(data.cli, period[i]),"**********************\n")
         df16$Station_Code[i] <- stationCode
         df16$Year[i] <- period[i]
-        SE <- season_growth(data.cli, period[i])
-        df16$StartD[i] <- SE[1]
-        df16$EndD[i] <- SE[2]
-        cat("The date of transition through 0C at the beginning of the growing season STDAT0\n")
-        D <- STDAT0(data.cli, data.calc, period[i])
-        df16$STDAT0[i] <- date2string(D)
-        cat("The date of transition through 5C in the beginning of the growing season STAT5\n")
-        D <- STDAT0(data.cli, data.calc, period[i], 11)
-        df16$STDAT5[i] <- date2string(D)
-        cat("Date of transition at the end of the season after 0 - 5 FDAT0\n")
-        D <- FDAT0(data.cli, data.calc, period[i])
-        df16$FDAT0[i] <- date2string(D)
-        D <- FDAT0(data.cli, data.calc, period[i], 5)
-        df16$FDAT5[i] <- date2string(D)
-        cat("The maximum temperature MAXT\n")
-        df16$MAXT[i] <- MAXT(data.cli, period[i])
-        cat("Date of the maximum temperature MDAT\n")
-        D <- MDAT(data.cli, period[i])
-        df16$MDAT[i] <- date2string(D)
-        cat("The duration of the season from 0C to 0C, 5C to 5C INTER0\n")
-        SL <- INTER0(data.cli, data.calc, period[i])
-        df16$INTER0[i] <- SL
-        df16$INTER5[i] <- INTER0(data.cli, data.calc, period[i], temp.c = 5)
-        cat("The sum of temperatures more 0C, 5C SUMT0\n") 
-        df16$SUMT0[i] <- SUMT0(data.cli, data.calc, period[i])
-        df16$SUMT5[i] <- SUMT0(data.cli, data.calc, period[i], 5)
-        cat("The sum of temperatures above 0C-5C until June 22 T2205\n") 
-        df16$T220[i] <- T2205(data.cli, data.calc, period[i])
-        df16$T225[i] <- T2205(data.cli, data.calc, period[i], 5)
-        cat("The sum of temperatures from 22 June to go through 0o at the end of the season FT2205\n")
-        df16$FT220[i] <- FT2205(data.cli, data.calc, period[i])
-        df16$FT225[i] <- FT2205(data.cli, data.calc, period[i], temp.c = 5)
-        cat("The rate of temperature rise of  SPEEDT\n")
-        df16$SPEEDT[i] <- SPEEDT(data.cli, period[i])
-        cat("The amount of precipitation during the growing season SUMPREC\n")
-        df16$SUMPREC[i] <- SUMPREC(data.cli, data.calc, period[i])
+        # There is the initial year of observation is finite. The intermediate may be missing. Skip
+        # the calculation cycle.
+        if (numberObservation(data.cli, period[i]) > 69) {
+            SE <- season_growth(data.cli, period[i])
+            df16$StartD[i] <- SE[1]
+            df16$EndD[i] <- SE[2]
+            catE("The date of transition through 0C at the beginning of the growing season STDAT0\n")
+            D <- STDAT0(data.cli, data.calc, period[i])
+            df16$STDAT0[i] <- date2string(D)
+            catE("The date of transition through 5C in the beginning of the growing season STAT5\n")
+            D <- STDAT0(data.cli, data.calc, period[i], 11)
+            df16$STDAT5[i] <- date2string(D)
+            catE("Date of transition at the end of the season after 0 - 5 FDAT0\n")
+            D <- FDAT0(data.cli, data.calc, period[i])
+            df16$FDAT0[i] <- date2string(D)
+            D <- FDAT0(data.cli, data.calc, period[i], 5)
+            df16$FDAT5[i] <- date2string(D)
+            catE("The maximum temperature MAXT\n")
+            df16$MAXT[i] <- MAXT(data.cli, period[i])
+            catE("Date of the maximum temperature MDAT\n")
+            D <- MDAT(data.cli, period[i])
+            df16$MDAT[i] <- date2string(D)
+            catE("The duration of the season from 0C to 0C, 5C to 5C INTER0\n")
+            SL <- INTER0(data.cli, data.calc, period[i])
+            df16$INTER0[i] <- SL
+            df16$INTER5[i] <- INTER0(data.cli, data.calc, period[i], temp.c = 5)
+            catE("The sum of temperatures more 0C, 5C SUMT0\n")
+            df16$SUMT0[i] <- SUMT0(data.cli, data.calc, period[i])
+            df16$SUMT5[i] <- SUMT0(data.cli, data.calc, period[i], 5)
+            catE("The sum of temperatures above 0C-5C until June 22 T2205\n")
+            df16$T220[i] <- T2205(data.cli, data.calc, period[i])
+            df16$T225[i] <- T2205(data.cli, data.calc, period[i], 5)
+            catE("The sum of temperatures from 22 June to go through 0o at the end of the season FT2205\n")
+            df16$FT220[i] <- FT2205(data.cli, data.calc, period[i])
+            df16$FT225[i] <- FT2205(data.cli, data.calc, period[i], temp.c = 5)
+            catE("The rate of temperature rise of  SPEEDT\n")
+            df16$SPEEDT[i] <- SPEEDT(data.cli, period[i])
+            catE("The amount of precipitation during the growing season SUMPREC\n")
+            df16$SUMPREC[i] <- SUMPREC(data.cli, data.calc, period[i])
+        } else {
+            cat("#################### Skip a year!!!! \n")
+        }
+        
     }
     cat("\n")
     # the estimated return table from function
     return(df16)
 }
+
 ```
 ### Results of calculation
   + Structure of the table of results
