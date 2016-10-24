@@ -10,6 +10,8 @@
 
 ```{r begin}
 source("https://raw.githubusercontent.com/tmeits/24516/master/transect/set_work_dir.R")
+Rmd2R("transect.Rmd", "transect.R")
+source("transect.R")
 # downloadable list of files containing climatic measurements
 altai.files <- list.files(path = "cli/altai")
 lena.files <- list.files(path = "cli/lena")
@@ -52,24 +54,34 @@ cli2par <- function(path, listFiles, info = TRUE) {
             require(pracma)
             tic()
             E <- eval16CliPars("23365", D, D, startYear, endYear)
-            toc()
             str(E)
             head(E)
             summary(E)
+            toc()
         } else {
             E <- eval16CliPars("23365", D, D, startYear, endYear)
         }
         # WriteXLSX
-        Sys.setenv(R_ZIPCMD = paste0(path, "/bin/zip.exe"))  ## path to zip.exe
+        Sys.setenv(R_ZIPCMD = paste0(path, "/zip.exe"))  ## path to zip.exe
         require(openxlsx)
-        #openxlsx::write.xlsx(listDF, file = paste0(path,"/cli2par/",listFiles[i]),".xlsx")
+        head(E)
+        openxlsx::write.xlsx(E, file = paste0(path,"/cli2par/",listFiles[i],".xlsx"))
         
     }
 }
 
-cli2par(paste0(mm_path, "/cli/altai/"), altai.files[4], info = TRUE)
-
-
+cli2par(paste0(mm_path, "/cli/altai/"), altai.files[1], info = TRUE)
+# traceback()
+#  Reading a specific year, specific weather stations
+getCliStation <- function(path, files) {
+    D <- read.csv(paste0(path, files), header = FALSE, sep = "", dec = ".")
+    D <- setNames(D, c("Day", "Month", "Year", "PRECIP", "TMEAN"))
+    return(D)
+}
+SA472 <- getCliStation(paste0(mm_path, "/cli/altai/"), altai.files[4])
+numberObservation(SA472, 1972)
+numberObservation(SA472, 1948)
+# http://adv-r.had.co.nz/Exceptions-Debugging.html#debugging-techniques
 
 
 ```
