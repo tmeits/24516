@@ -13,14 +13,16 @@ source("https://raw.githubusercontent.com/tmeits/24516/master/transect/set_work_
 Rmd2R("transect.Rmd", "transect.R")
 source("transect.R")
 # downloadable list of files containing climatic measurements
-altai.files <- list.files(path = "cli/altai")
-lena.files <- list.files(path = "cli/lena")
-north.files <- list.files(path = "cli/north")
-yenisei.files <- list.files(path = "cli/yenisei")
+# http://stackoverflow.com/questions/4876813/using-r-to-list-all-files-with-a-specified-extension
+altai.files <- list.files(pattern = "\\.txt$", path = "cli/altai", ignore.case=TRUE, recursive=FALSE, full.names = FALSE)
+lena.files <- list.files(pattern = "\\.txt$", path = "cli/lena", ignore.case=TRUE)
+north.files <- list.files(pattern = "\\.txt$", path = "cli/north", ignore.case=TRUE)
+yenisei.files <- list.files(pattern = "\\.txt$", path = "cli/yenisei", ignore.case=TRUE)
 
 all.files <- sort(c(altai.files, lena.files, north.files, yenisei.files))
 all.files
 cli2par <- function(path, listFiles, info = TRUE) {
+    listE <- list(1:length(listFiles))
     for (i in 1:length(listFiles)) {
         D <- read.csv(paste0(path, listFiles[i]), header = FALSE, sep = "", dec = ".")
         # The names of each column assign
@@ -55,22 +57,29 @@ cli2par <- function(path, listFiles, info = TRUE) {
             tic()
             E <- eval16CliPars("23365", D, D, startYear, endYear)
             str(E)
-            head(E)
-            summary(E)
             toc()
         } else {
             E <- eval16CliPars("23365", D, D, startYear, endYear)
         }
-        # WriteXLSX
+        # Deleted row is marked as bad
+        E <- E[E$StartD != -9999, ]
         Sys.setenv(R_ZIPCMD = paste0(path, "/zip.exe"))  ## path to zip.exe
-        require(openxlsx)
-        head(E)
-        openxlsx::write.xlsx(E, file = paste0(path,"/cli2par/",listFiles[i],".xlsx"))
-        
+        require(openxlsx)  # # WriteXLSX
+        openxlsx::write.xlsx(E, file = paste0(path, "/cli2par/", listFiles[i], ".xlsx"))
+        # Save result to list listE[i] <- E
     }
+    return(E)
 }
 
-cli2par(paste0(mm_path, "/cli/altai/"), altai.files[1], info = TRUE)
+
+
+par.alatai <- cli2par(paste0(mm_path, "/cli/altai/"), altai.files, info = TRUE)
+par.lena <- cli2par(paste0(mm_path, "/cli/lena/"), lena.files, info = TRUE)
+par.north <- cli2par(paste0(mm_path, "/cli/north/"), north.files, info = TRUE)
+par.yenisei <- cli2par(paste0(mm_path, "/cli/yenisei/"), yenisei.files, info = TRUE)
+
+# https://www.rstudio.com/wp-content/uploads/2016/02/advancedR.pdf
+# https://englianhu.files.wordpress.com/2016/05/advanced-r.pdf
 # traceback()
 #  Reading a specific year, specific weather stations
 getCliStation <- function(path, files) {
