@@ -85,11 +85,14 @@ seasonBG <- function(years, now) {
             if (sumT >= 90) 
                 return(i)
     }
-    if (i >= yearL) 
-        stop(paste("Invalid begin day", " Year=", now))
+    if (i >= yearL) {
+        warning(paste("Invalid begin day", " Year=", now))
+        return(FALSE)
+    }
     return(i)
 }
 seasonBG(Minusinsk.cli, 1964)  # test
+
 
 # By the end of the growing season to consider the following condition: when the sum of temperatures over 10 consecutive days is below 50 degrees. The end of the season - it's the last day in this sequence.
 # the end of the growing season
@@ -376,8 +379,8 @@ eval16CliPars <- function(stationCode, data.cli, data.calc, beginYear, endYear) 
     m16 <- matrix(c(1:(l * (16 + 4))), nrow = l, ncol = (16 + 4), byrow = TRUE)
     m16.df <- as.data.frame(m16)  #  converted to dataframe
     fistCol <- c("Station_Code", "Year", "StartD", "EndD")
-    lastCol <- c("STDAT0", "STDAT5", "FDAT0", "FDAT5", "INTER0", "INTER5", "MAXT", "MDAT", "SUMT0", 
-        "SUMT5", "T220", "T225", "FT220", "FT225", "SPEEDT", "SUMPREC")
+    lastCol <- c("STDAT0", "STDAT5", "FDAT0", "FDAT5", "INTER0", "INTER5", "MAXT", "MDAT", 
+        "SUMT0", "SUMT5", "T220", "T225", "FT220", "FT225", "SPEEDT", "SUMPREC")
     # assign names to the columns
     df16 <- setNames(m16.df, c(fistCol, lastCol))
     # the task is to determine the data type of each column
@@ -389,12 +392,18 @@ eval16CliPars <- function(stationCode, data.cli, data.calc, beginYear, endYear) 
     df16$MDAT <- as.character(df16$MDAT)
     cat("Start eval16CliPars\n")
     for (i in 1:l) {
-        cat("****************Year=", period[i], "Observation=",numberObservation(data.cli, period[i]),"**********************\n")
+        cat("****************Year=", period[i], "Observation=", numberObservation(data.cli, 
+            period[i]), "**********************\n")
         df16$Station_Code[i] <- stationCode
         df16$Year[i] <- period[i]
-        # There is the initial year of observation is finite. The intermediate may be missing. Skip
-        # the calculation cycle.
-        if (numberObservation(data.cli, period[i]) > 69) {
+        # There is the initial year of observation is finite. The intermediate may be
+        # missing. Skip the calculation cycle.
+        
+        # If the beginning of the season it is impossible to calculate a noise. For example,
+        # climatic data starts from August and the season is from may
+        if ((numberObservation(data.cli, period[i]) > 69) & (seasonBG(data.cli, period[i]) != 
+            FALSE)) {
+            
             SE <- season_growth(data.cli, period[i])
             df16$StartD[i] <- SE[1]
             df16$EndD[i] <- SE[2]
@@ -433,6 +442,7 @@ eval16CliPars <- function(stationCode, data.cli, data.calc, beginYear, endYear) 
             df16$SUMPREC[i] <- SUMPREC(data.cli, data.calc, period[i])
         } else {
             cat("#################### Skip a year!!!! \n")
+            df16$StartD[i] <- -9999  # Mark the year with a bad climatical
         }
         
     }
@@ -440,6 +450,7 @@ eval16CliPars <- function(stationCode, data.cli, data.calc, beginYear, endYear) 
     # the estimated return table from function
     return(df16)
 }
+
 
 ```
 ### Results of calculation
@@ -479,37 +490,34 @@ write_eval_clipars(paste0(mm_path, '/23365.csv'), E)
 ```{r xlsx}
 #install.packages('pacman', dependencies=TRUE, repos='http://cran.rstudio.com/')
 #install.packages('openxlsx', dependencies=TRUE, repos='http://cran.rstudio.com/')
-
-#Sys.setenv("R_ZIPCMD" = "C:/Rtools/bin/zip.exe") ## path to zip.exe
-Sys.setenv(R_ZIPCMD = paste0(mm_path, "/bin/zip.exe"))  ## path to zip.exe
-require(openxlsx)
-# test data.frame's
-testWriteReadXLSX <- function(listDF, fileName, sheet = 1) {
-    openxlsx::write.xlsx(listDF, file = fileName)
-    R <- openxlsx::read.xlsx(xlsxFile = fileName, sheet = sheet, skipEmptyRows = TRUE)
-    return(R)
+if (FALSE) {
+    # Sys.setenv('R_ZIPCMD' = 'C:/Rtools/bin/zip.exe') ## path to zip.exe
+    Sys.setenv(R_ZIPCMD = paste0(mm_path, "/bin/zip.exe"))  ## path to zip.exe
+    require(openxlsx)
+    # test data.frame's
+    testWriteReadXLSX <- function(listDF, fileName, sheet = 1) {
+        openxlsx::write.xlsx(listDF, file = fileName)
+        R <- openxlsx::read.xlsx(xlsxFile = fileName, sheet = sheet, skipEmptyRows = TRUE)
+        return(R)
+    }
+    testListDF <- list(iris = iris, mtcars = mtcars, chickwts = chickwts, quakes = quakes)
+    WR <- testWriteReadXLSX(testListDF, paste0(mm_path, "/23365.xlsx"))
+    str(WR)
+    head(WR)
+    WR <- testWriteReadXLSX(list(E, testListDF[1]), paste0(mm_path, "/23365.xlsx"), sheet = 1)
+    str(WR)
+    head(WR)
 }
-testListDF <- list(iris = iris, mtcars = mtcars, chickwts = chickwts, quakes = quakes)
-WR <- testWriteReadXLSX(testListDF, paste0(mm_path, "/23365.xlsx"))
-str(WR)
-head(WR)
-WR <- testWriteReadXLSX(list(E, testListDF[1]), paste0(mm_path, "/23365.xlsx"), sheet = 1)
-str(WR)
-head(WR)
 
 ```
-### Summary table on climate stations
+### Summary table on climate stations write to XLSX
 ```{r master_location}
-df.names <- c("Statio_Code", "Latitude", "Longitude", "Elevation", "Start_Y", " End_Y" )
-
-st <- read.csv("master-location-identifier-database-20130801.csv", header = TRUE, sep = ",", dec = ".")
-
-L <- length(st[, 1])
-for (i in 1:L) {
-    if (!is.na(st[i, 12])) {
-        if (st[i, "wmo_xref"] == 23365)
-            cat(i, "\n")
-    }
+if (FALSE) {
+    st <- read.csv("master-location-identifier-database-20130801.csv", header = TRUE, 
+        sep = ",", dec = ".")
+    Sys.setenv(R_ZIPCMD = paste0(mm_path, "/bin/zip.exe"))  ## path to zip.exe
+    require(openxlsx)
+    openxlsx::write.xlsx(st, file = "master-location-identifier-database-20130801.xlsx")
 }
 
 ```
