@@ -21,26 +21,29 @@ yenisei.files <- list.files(pattern = "\\.txt$", path = "cli/yenisei", ignore.ca
 
 all.files <- sort(c(altai.files, lena.files, north.files, yenisei.files))
 all.files
-cli2par <- function(path, listFiles, info = TRUE) {
+cli2par <- function(path, listFiles, info = TRUE, methodNA = TRUE) {
     listE <- list(1:length(listFiles))
     for (i in 1:length(listFiles)) {
         D <- read.csv(paste0(path, listFiles[i]), header = FALSE, sep = "", dec = ".")
         # The names of each column assign
         D <- setNames(D, c("Day", "Month", "Year", "PRECIP", "TMEAN"))
         if (info == TRUE) {
-            print("***************************************************************")
+            print("+---------------------------------------------------------+")
             print(paste0(path, listFiles[i]))
-            # Delete the rows contains the number -9999
+            cat("Delete/Replace the rows contains the number -9999\n")
             na <- abs(length(D[D$PRECIP != -9999, ][, 1]) - length(D[, 1]))
-            cat("The number of deleted rows by column precipitation=", na, "\n")
+            cat("The number of del/rep rows by column precipitation=", na, "\n")
             D <- D[D$PRECIP != -9999, ]
             na <- abs(length(D[D$TMEAN != -9999, ][, 1]) - length(D[, 1]))
-            cat("The number of deleted rows by column temp=", na, "\n")
+            cat("The number of del/rep rows by column temp=", na, "\n")
             D <- D[D$TMEAN != -9999, ]
+            print("Tail")
             print(tail(D))
+            print("Structure")
             print(str(D))
+            print("Summary")
             print(summary(D[4:5]))
-            print("***************************************************************")
+            print("+---------------------------------------------------------+")
         } else {
             # Delete the rows contains the number -9999
             na <- abs(length(D[D$PRECIP != -9999, ][, 1]) - length(D[, 1]))
