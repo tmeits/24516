@@ -8,8 +8,8 @@
   + The calculation of climatic parameters
   + Record results in a spreadsheet 
 
-```{r begin}
-source("https://raw.githubusercontent.com/tmeits/24516/master/transect/set_work_dir.R")
+```{r climatic}
+source("http://tmeits.github.io/24516/transect/setdw.R")
 Rmd2R("transect.Rmd", "transect.R")
 source("transect.R")
 # downloadable list of files containing climatic measurements
@@ -21,6 +21,10 @@ yenisei.files <- list.files(pattern = "\\.txt$", path = "cli/yenisei", ignore.ca
 
 all.files <- sort(c(altai.files, lena.files, north.files, yenisei.files))
 all.files
+```
+### The calculation of the sixteen climatic characteristics
+
+```{r cli2par}
 cli2par <- function(path, listFiles, info = TRUE, methodNA = TRUE) {
     listE <- list(1:length(listFiles))
     for (i in 1:length(listFiles)) {
@@ -28,6 +32,7 @@ cli2par <- function(path, listFiles, info = TRUE, methodNA = TRUE) {
         # The names of each column assign
         D <- setNames(D, c("Day", "Month", "Year", "PRECIP", "TMEAN"))
         if (info == TRUE) {
+        #todo created methodNA zoo packages
             print("+---------------------------------------------------------+")
             print(paste0(path, listFiles[i]))
             cat("Delete/Replace the rows contains the number -9999\n")
@@ -43,6 +48,7 @@ cli2par <- function(path, listFiles, info = TRUE, methodNA = TRUE) {
             print(str(D))
             print("Summary")
             print(summary(D[4:5]))
+            #print(summary(D))
             print("+---------------------------------------------------------+")
         } else {
             # Delete the rows contains the number -9999
@@ -58,14 +64,15 @@ cli2par <- function(path, listFiles, info = TRUE, methodNA = TRUE) {
         if (info == TRUE) {
             require(pracma)
             tic()
+            #todo insert numStation
             E <- eval16CliPars("23365", D, D, startYear, endYear)
-            str(E)
             toc()
         } else {
             E <- eval16CliPars("23365", D, D, startYear, endYear)
         }
         # Deleted row is marked as bad
         E <- E[E$StartD != -9999, ]
+        str(E)
         Sys.setenv(R_ZIPCMD = paste0(path, "/zip.exe"))  ## path to zip.exe
         require(openxlsx)  # # WriteXLSX
         openxlsx::write.xlsx(E, file = paste0(path, "/cli2par/", listFiles[i], ".xlsx"))
@@ -73,10 +80,11 @@ cli2par <- function(path, listFiles, info = TRUE, methodNA = TRUE) {
     }
     return(E)
 }
+```
+###  For all of the weather stations included in the transect
 
-
-
-par.alatai <- cli2par(paste0(mm_path, "/cli/altai/"), altai.files, info = TRUE)
+```{r calculate_transect}
+par.alatai <- cli2par(paste0(mm_path, "/cli/altai/"), altai.files[2], info = TRUE)
 par.lena <- cli2par(paste0(mm_path, "/cli/lena/"), lena.files, info = TRUE)
 par.north <- cli2par(paste0(mm_path, "/cli/north/"), north.files, info = TRUE)
 par.yenisei <- cli2par(paste0(mm_path, "/cli/yenisei/"), yenisei.files, info = TRUE)
@@ -90,11 +98,11 @@ getCliStation <- function(path, files) {
     D <- setNames(D, c("Day", "Month", "Year", "PRECIP", "TMEAN"))
     return(D)
 }
-SA472 <- getCliStation(paste0(mm_path, "/cli/altai/"), altai.files[4])
+SA472 <- getCliStation(paste0(mm_path, "/cli/altai/"), altai.files[2])
+Y1971 <- get_one_year(SA472, 1971)
 numberObservation(SA472, 1972)
 numberObservation(SA472, 1948)
 # http://adv-r.had.co.nz/Exceptions-Debugging.html#debugging-techniques
-
 
 ```
 
