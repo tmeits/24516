@@ -136,7 +136,7 @@ test_periodObservation <- function() {
 
 # Assume the beginning of growing season the total transition temperature sumT for 10 consecutive days using a threshold value of 90 degrees Celsius. Then the beginning of the growing season can be considered the first day in this sequence, when conditions will be made (i.e., sumT>=90).
 # the beginning of the growing season
-seasonBG <- function(years, now) {
+seasonBG <- function(years, now, war = TRUE) {
     year <- get_one_year(years, now)
     year <- na.omit(year)
     yearT <- year[, ]$TMEAN
@@ -147,12 +147,17 @@ seasonBG <- function(years, now) {
             if (sumT >= 90) 
                 return(i)
     }
-    if (i >= yearL) {
+    if (i >= yearL & war == TRUE) {
         warning(paste("Invalid begin day", " Year=", now))
         return(FALSE)
-    }
+    } else return(FALSE)
+    # if (i >= yearL & war == TRUE) { warning(paste('Invalid begin day', ' Year=',
+    # now)) return(FALSE) }
     return(i)
 }
+
+
+
 seasonBG(Minusinsk.cli, 1964)  # test
 
 
@@ -456,8 +461,9 @@ eval16CliPars <- function(stationCode, data.cli, data.calc, beginYear, endYear) 
             df16$ObsBeg[i] <-  firstDate
             df16$ObsEnd[i] <-  lastDate         
             SE <- season_growth(data.cli, period[i])
-            df16$StartD[i] <- SE[1]
-            df16$EndD[i] <- SE[2]
+            if(SE[1] == FALSE) SE[1]<- -9999
+            df16$StartSG[i] <- SE[1]
+            df16$EndSG[i] <- SE[2]
             catE("The date of transition through 0C at the beginning of the growing season STDAT0\n")
             D <- STDAT0(data.cli, data.calc, period[i])
             df16$STDAT0[i] <- date2string(D)
@@ -494,7 +500,7 @@ eval16CliPars <- function(stationCode, data.cli, data.calc, beginYear, endYear) 
         } else {
             cat("****** Year:", period[i],"\n")
             cat("#################### Skip a year!!!! \n")
-            df16$StartD[i] <- -9999  # Mark the year with a bad climatical
+            df16$StartSG[i] <- -9999  # Mark the year with a bad climatical
         }
         
     }
