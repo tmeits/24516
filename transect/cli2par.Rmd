@@ -1,114 +1,632 @@
+
 ***
-###  The calculation of the sixteen climatic characteristics for all of the weather stations included in the transect
-#### Iljin Victor, 13.10.2016
+### For each year-written function to calculate the 16 climatic characteristics
+
+#### This allowed to characterize each growing season 16-dimensional vector (Shishov V. V. table. 2.7.1, Chapter 2, p. 194)
+
+### Author : Iljin Victor,  Date   : 31/09/2016
 ***
-  + download scripts with calculation functions
-  + reading climate data of the weather station
-  + cleaning missing values 
-  + The calculation of climatic parameters
-  + Record results in a spreadsheet 
 
-```{r climatic}
-source("http://tmeits.github.io/24516/transect/setdw.R")
-Rmd2R("transect.Rmd", "transect.R")
-source("transect.R")
-# downloadable list of files containing climatic measurements
-# http://stackoverflow.com/questions/4876813/using-r-to-list-all-files-with-a-specified-extension
-altai.files <- list.files(pattern = "\\.txt$", path = "cli/altai", ignore.case=TRUE, recursive=FALSE, full.names = FALSE)
-lena.files <- list.files(pattern = "\\.txt$", path = "cli/lena", ignore.case=TRUE)
-north.files <- list.files(pattern = "\\.txt$", path = "cli/north", ignore.case=TRUE)
-yenisei.files <- list.files(pattern = "\\.txt$", path = "cli/yenisei", ignore.case=TRUE)
-
-all.files <- sort(c(altai.files, lena.files, north.files, yenisei.files))
-all.files
-```
-### The calculation of the sixteen climatic characteristics
-
-```{r cli2par}
-cli2par <- function(path, listFiles, info = TRUE, methodNA = TRUE) {
-    listE <- list(1:length(listFiles))
-    for (i in 1:length(listFiles)) {
-        D <- read.csv(paste0(path, listFiles[i]), header = FALSE, sep = "", dec = ".")
-        # The names of each column assign
-        D <- setNames(D, c("Day", "Month", "Year", "PRECIP", "TMEAN"))
-        if (info == TRUE) {
-        #todo created methodNA zoo packages
-            print("+---------------------------------------------------------+")
-            print(paste0(path, listFiles[i]))
-            cat("Delete/Replace the rows contains the number -9999\n")
-            na <- abs(length(D[D$PRECIP != -9999, ][, 1]) - length(D[, 1]))
-            cat("The number of del/rep rows by column precipitation=", na, "\n")
-            D <- D[D$PRECIP != -9999, ]
-            na <- abs(length(D[D$TMEAN != -9999, ][, 1]) - length(D[, 1]))
-            cat("The number of del/rep rows by column temp=", na, "\n")
-            D <- D[D$TMEAN != -9999, ]
-            print("Tail")
-            print(tail(D))
-            print("Structure")
-            print(str(D))
-            print("Summary")
-            print(summary(D[4:5]))
-            #print(summary(D))
-            print("+---------------------------------------------------------+")
-        } else {
-            # Delete the rows contains the number -9999
-            na <- abs(length(D[D$PRECIP != -9999, ][, 1]) - length(D[, 1]))
-            D <- D[D$PRECIP != -9999, ]
-            na <- abs(length(D[D$TMEAN != -9999, ][, 1]) - length(D[, 1]))
-            D <- D[D$TMEAN != -9999, ]
-        }
-        # get rid of all observations with missing data
-        D <- na.omit(D)
-        endYear <- D[length(D[, 3]), 3]
-        startYear <- D[1, 3]
-        if (info == TRUE) {
-            require(pracma)
-            tic()
-            #todo insert numStation
-            E <- eval16CliPars("23365", D, D, startYear, endYear)
-            toc()
-        } else {
-            E <- eval16CliPars("23365", D, D, startYear, endYear)
-        }
-        # Deleted row is marked as bad
-        E <- E[E$StartSG != -9999, ]
-        #todo add tryCatch
-        print(str(E))
-        print(head(E))
-        print(summary(E[c(2,5,6,11,12,13,15,16,17,18,19,20,21,22)]))
-        
-        Sys.setenv(R_ZIPCMD = paste0(path, "/zip.exe"))  ## path to zip.exe
-        require(openxlsx)  # # WriteXLSX
-        openxlsx::write.xlsx(E, file = paste0(path, "/cli2par/", listFiles[i], ".xlsx"))
-        # Save result to list listE[i] <- E
-    }
-    return(E)
+```{r transect_set_path}
+## Set work path
+getOsVersion <- function() {
+    sysinf <- Sys.info()
+    if (!is.null(sysinf)) 
+        osVersion <- sysinf["version"] else stop("mystery machine...")
+    return(osVersion)
 }
+getOsVersion()
+
+# Installation of a working directory
+setWorkDir <- function(osVersion) {
+    if (osVersion == "build 2600, Service Pack 3") 
+        setwd("Z:/home/larisa/Dropbox/24516/transect/")
+    else if (osVersion == "#32-Ubuntu SMP Fri Apr 16 08:10:02 UTC 2010")
+        setwd("/home/larisa/Dropbox/24516/transect/")
+    else if (osVersion == "build 7601, Service Pack 1")
+        setwd("C:/Users/IVA/Dropbox/24516/transect/") else stop("mystery...")
+    return(getwd())
+}
+mm_path <- setWorkDir(getOsVersion())
+mm_path
+
 ```
-###  For all of the weather stations included in the transect
+#### Read test datasets
+#### Work with weather data <http://aisori.meteo.ru/ClimateR> [R]
+```{r read_test_cli}
 
-```{r calculate_transect}
-par.alatai <- cli2par(paste0(mm_path, "/cli/altai/"), altai.files[3], info = TRUE)
-par.lena <- cli2par(paste0(mm_path, "/cli/lena/"), lena.files, info = TRUE)
-par.north <- cli2par(paste0(mm_path, "/cli/north/"), north.files[5], info = TRUE)
-par.yenisei <- cli2par(paste0(mm_path, "/cli/yenisei/"), yenisei.files, info = TRUE)
+readClimateMinusinsk <- function(url) {
+    sm.cli <- read.csv(url, header = FALSE, sep = ";", dec = ".")
+    sm.cli <- sm.cli[-c(5, 7, 9, 11, 13, 14)]  # we delete excess columns
+    sm.cli <- setNames(sm.cli, c("Station", "Year", "Month", "Day", "TMIN", "TMEAN",
+        "TMAX", "PRECIP"))  # Assign columns names
+    # 53.42N 91.42E
+    Minusinsk.cli <- sm.cli[sm.cli$Station == 29866, ]
+    return(Minusinsk.cli)
+}
 
-# https://www.rstudio.com/wp-content/uploads/2016/02/advancedR.pdf
-# https://englianhu.files.wordpress.com/2016/05/advanced-r.pdf
-# traceback()
+Minusinsk.cli <- readClimateMinusinsk(paste0(mm_path, "/SCH231.txt"))
+tail(Minusinsk.cli)
+str(Minusinsk.cli)
+summary(Minusinsk.cli)
+sum(is.na(Minusinsk.cli))
+mean(is.na(Minusinsk.cli))
+```
+### Utility functions
+```{r utility}
+
 #  Reading a specific year, specific weather stations
 getCliStation <- function(path, files) {
     D <- read.csv(paste0(path, files), header = FALSE, sep = "", dec = ".")
     D <- setNames(D, c("Day", "Month", "Year", "PRECIP", "TMEAN"))
     return(D)
 }
-SA472 <- getCliStation(paste0(mm_path, "/cli/altai/"), altai.files[2])
-Y1971 <- get_one_year(SA472, 1971)
-numberObservation(SA472, 1972)
-numberObservation(SA472, 1948)
-# http://adv-r.had.co.nz/Exceptions-Debugging.html#debugging-techniques
+
+# Convert a vector of Year-Month-Day into a string suitable for
+# reverse-conversion
+date2string <- function(cDate) {
+    sD <- paste(cDate[1], "-", cDate[2], "-", cDate[3], sep = "")  
+    D <- as.Date(sD)  
+    return(sD)
+}
+test_date2string <- function() {
+    DS <- date2string(c(2007, 11, 12))
+    cat("Convert data as strung= ", DS, "\n")  
+}
+# test_date2string()
+date2string0 <- function(cDate) {
+    nDate <- 1:3
+    nDate[1] <- cDate[3]
+    nDate[2] <- cDate[2]
+    nDate[3] <- cDate[1]
+    date2string(nDate)
+}
+test_date2string0 <- function() {
+    DS <- date2string0(c(2007, 11, 12))
+    cat("Convert data as strung= ", DS, "\n")
+}
+# test_date2string0()
+ 
+# Reading climatic data in one year
+get_one_year <- function(years, now) {
+    return(years[years$Year == now, ])
+}
+if (.TT == TRUE) {
+    Y64 <- get_one_year(Minusinsk.cli, 1964)  # test
+    head(Y64)
+    summary(Y64[, 5:8])
+}
+
+# The number of days of observation per year
+numberObservation <- function(years, now) {
+    Y <- get_one_year(years, now)
+    return(length(Y[, 1]))
+}
+if (.TT == TRUE) cat("numberObservation ", 1964, numberObservation(Minusinsk.cli, 1964), 
+    "\n")
+
+# Function retrieves climate data and year for analysis. Returns in a vector the starting date of the observations this year. And end. The format of the text.
+periodObservation <- function(years, now, typeData = "DMY") {
+    Y <- get_one_year(years, now)
+    if (typeData == "DMY") {
+        firstDate <- date2string(c(Y[1, ]$Day, Y[1, ]$Month, Y[1, ]$Year))
+        lastDate <- date2string(c(Y[length(Y[, ]$Day), ]$Day, Y[length(Y[, ]$Day), 
+            ]$Month, Y[length(Y[, ]$Day), ]$Year))
+    } else {
+        firstDate <- date2string0(c(Y[1, ]$Day, Y[1, ]$Month, Y[1, ]$Year))
+        lastDate <- date2string0(c(Y[length(Y[, ]$Day), ]$Year, Y[length(Y[, ]$Day), 
+            ]$Month, Y[length(Y[, ]$Day), ]$Day))
+    }
+    return(c(firstDate, lastDate))
+}
+
+test_periodObservation <- function() {
+    P <- periodObservation(Minusinsk.cli, 1964)
+    cat("periodObservation:", P[1], P[2], "\n")
+    altai.files <- list.files(pattern = "\\.txt$", path = "cli/altai", ignore.case = TRUE, 
+        recursive = FALSE, full.names = FALSE)
+    CS <- getCliStation(paste0(mm_path, "/cli/altai/"), altai.files[4])
+    P <- periodObservation(CS, 1975)
+    cat("periodObservation:", P[1], P[2], "\n")
+    P <- periodObservation(CS, 1975, typeData = "YMD")
+    cat("periodObservation:", P[1], P[2], "\n")
+}
+
+# test_periodObservation()
+
+# Assume the beginning of growing season the total transition temperature sumT for 10 consecutive days using a threshold value of 90 degrees Celsius. Then the beginning of the growing season can be considered the first day in this sequence, when conditions will be made (i.e., sumT>=90).
+# the beginning of the growing season
+seasonBG <- function(years, now, war = TRUE) {
+    year <- get_one_year(years, now)
+    year <- na.omit(year)
+    yearT <- year[, ]$TMEAN
+    yearL <- length(yearT)
+    for (i in 1:yearL) {
+        sumT <- sum(yearT[i:(i + 10)])
+        if (!is.na(sumT)) 
+            if (sumT >= 90) 
+                return(i)
+    }
+    if (i >= yearL & war == TRUE) {
+        warning(paste("Invalid begin day", " Year=", now))
+        return(FALSE)
+    } else return(FALSE)
+    # if (i >= yearL & war == TRUE) { warning(paste('Invalid begin day', ' Year=',
+    # now)) return(FALSE) }
+    return(i)
+}
+test_seasonBG <- function() {
+    seasonBG(Minusinsk.cli, 1964)
+}
+#test_seasonBG()
+ 
+# By the end of the growing season to consider the following condition: when the sum of temperatures over 10 consecutive days is below 50 degrees. The end of the season - it's the last day in this sequence.
+# the end of the growing season
+seasonEG <- function(years, now) {
+    year <- get_one_year(years, now)
+    year <- na.omit(year)
+    yearT <- year[, ]$TMEAN
+    yearL <- length(yearT)
+    firstDay <- seasonBG(years, now)
+    if (firstDay >= yearL) 
+        stop("invalid seasonBG day")
+    for (i in firstDay:yearL) {
+        sumT <- sum(yearT[i:(i + 10)])
+        if (!is.na(sumT)) 
+            if (sumT < 50) 
+                return(i + 10)
+    }
+    return(i)
+}
+seasonEG(Minusinsk.cli, 1961)  # test
+
+# Beginning and end of the growing season in the specified year
+season_growth <- function(data.cli, needYear) {
+    return(c(seasonBG(data.cli, needYear), seasonEG(data.cli, needYear)))
+}
+S64 <- season_growth(Minusinsk.cli, 1964)
+cat("Reading of results season_growth ", S64, "\n")
+
+# a function which converts date in number of days from the beginning of the
+# year
+num_days <- function(year, month, day) {
+    D1 <- as.Date(paste(year, "-1-1", sep = ""))
+    asd <- as.Date(paste(year, "-", month, "-", day, sep = ""))
+    return(as.numeric(difftime(asd, D1, units = "day")))
+}
+ND <- num_days(1964, 6, 22)
+cat("NumDay=", ND, "\n")
+
+getNumDays <- function(day, month, year) {
+    D1 <- as.Date(paste(year, "-1-1", sep = ""))
+    asd <- as.Date(paste(year, "-", month, "-", day, sep = ""))
+    return(as.numeric(difftime(asd, D1, units = "day")))
+}
+if (.TT == TRUE) cat("getNumDays(1964, 6, 22)= ", getNumDays(1964, 6, 22), "\n")
 
 ```
+### Main functions
+       
+```{r Main16}
+# http://www.tablesgenerator.com/markdown_tables#
+# SpeedT is the speed of the temperature rise since the beginning of the growing season until June 22 (the summer solstice). In fact, it is necessary to take daily temperature (time series with daily temperatures) since the beginning of the growing season (e.g. may 25) until June 22 and build for the temperature Tem trend line (i.e. the regression equation of the form=a+bt, where t is day, a and b are regression coefficients). In this case, SpeedT is the same as the coefficient b.
+# Speed of rise in temperature
+SPEEDT <- function(data.cli, needYear, densityPlot = FALSE) {
+    year <- get_one_year(data.cli, needYear)
+    year <- na.omit(year)
+    sg <- season_growth(data.cli, needYear)
+    L <-  sg[1]:num_days(needYear, 6, 22)
+    DT <- data.frame(Day = L, Temp = year$TMEAN[L])
+    if (densityPlot == TRUE) {
+        plot(DT)
+        abline(lm(formula = DT$Temp ~ DT$Day, data=DT))
+        print(summary(lm(formula = DT$Temp ~ DT$Day, data=DT)))
+    }
+    DT.lm <- lm(formula = DT$Temp ~ DT$Day, data=DT)
+    return(as.numeric(DT.lm$coefficients[2])) # b1
+}
+
+# http://www.montefiore.ulg.ac.be/~kvansteen/GBIO0009-1/ac20092010/Class8/Using%20R%20for%20linear%20regression.pdf
+# https://ww2.coastal.edu/kingw/statistics/R-tutorials/simplelinear.html
+# http://www.rpubs.com/smarcel/106230
+# https://www.r-bloggers.com/interpreting-regression-coefficient-in-r/
+#https://cran.r-project.org/doc/contrib/Shipunov-rbook.pdf
+S <- SPEEDT(Minusinsk.cli, 1969, densityPlot = TRUE)
+S
+
+#cat("SPEED= ", S, "\n")
+
+
+# The sum of temperatures from 22 June to transition through 0C at the end of
+# the season/temperatures from June 22 to transition through 5C at the end of
+# the season
+FT2205 <- function(data.cli, data.calc, s.year, temp.c = 0) {
+    year <- get_one_year(data.cli, s.year)
+    year <- na.omit(year)
+    sg <- season_growth(data.calc, s.year)
+    nd <- num_days(s.year, 6, 22)
+    if (length(year[, 1]) < nd) {
+        #cat("WARNING: FT2205 num_days= ", nd, "lenYear= ", length(year[, 1]), " \n")
+        #cat("WARNING: FT2205 seasonBegin= ", sg[1], "seasonEnd= ", sg[2], " \n")
+        warning("the last date of observation is less than the computed end of the growing season")
+        nd <- 1
+        sg[2] <- length(year[, 1])
+    }
+    sum_temp <- 0
+    for (i in nd:sg[2]) {
+        if (year[i, ]$TMEAN > temp.c) {
+            sum_temp <- sum_temp + year[i, ]$TMEAN
+        }
+    }
+    return(sum_temp)
+}
+if (.TT == TRUE) {
+    sum_temp0 <- FT2205(Minusinsk.cli, Minusinsk.cli, 1965, 0)
+    sum_temp5 <- FT2205(Minusinsk.cli, Minusinsk.cli, 1965, 5)
+    cat("FT2205= ", sum_temp0, sum_temp5, "\n")
+}
+
+# The sum of temperatures above 0C until June 22/the Sum of temperatures above
+# 5C until June 22
+T2205 <- function(data.cli, data.calc, s.year, temp.c = 0) {
+    year <- get_one_year(data.cli, s.year)
+    year <- na.omit(year)
+    nd <- num_days(s.year, 6, 22)
+    sum_temp <- 0
+    if (length(year[, 1]) < nd) {
+        # cat("WARNING: T2205 num_days= ", nd, "lenYear= ", length(year[, 1]), " \n")
+        warning("june 22 will come after the date of the last observation")
+        nd <- length(year[, 1])
+    }
+    for (i in 1:nd) {
+        if (year[i, ]$TMEAN > temp.c) {
+            sum_temp <- sum_temp + year[i, ]$TMEAN
+        }
+    }
+    return(sum_temp)
+}
+if (.TT == TRUE) {
+    sum_temp0 <- T2205(Minusinsk.cli, Minusinsk.cli, 1965, 0)
+    sum_temp5 <- T2205(Minusinsk.cli, Minusinsk.cli, 1965, 5)
+    cat("T2205= ", sum_temp0, sum_temp5, "\n")
+}
+
+# The sum of temperatures more 0C - the Sum of temperatures more than 5C
+SUMT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
+  sum_temp <- 0
+  for(i in 1: length(year[, 1])) {
+    if(year[i, ]$TMEAN > temp.c) {
+      sum_temp <- sum_temp + year[i, ]$TMEAN
+    }
+  }
+  return(sum_temp)
+}
+# test
+sum_temp0 <- SUMT0(Minusinsk.cli, Minusinsk.cli, 1963, 0)
+sum_temp5 <- SUMT0(Minusinsk.cli, Minusinsk.cli, 1963, 5)
+cat("SUMT0= ", sum_temp0, sum_temp5, "\n")
+
+# The date of transition through 0C-5C at the beginning of the growing season
+STDAT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
+  sg <- season_growth(data.calc, s.year)
+  data.0c <- c(1, 1, 1)
+  for(i in 1: length(year[, 1])) {
+    if(year[i, ]$TMEAN >= temp.c & i >= sg[1]) {
+      data.0c[3] <- year[i, ]$Year
+      data.0c[2] <- year[i, ]$Month
+      data.0c[1] <- year[i, ]$Day
+      return(data.0c)
+    }
+  }
+  stop("In the permafrost, the trees do not grow. Check climatico.")
+}
+R0 <- STDAT0(Minusinsk.cli, Minusinsk.cli, 1969)
+R5 <- STDAT0(Minusinsk.cli, Minusinsk.cli, 1969, temp.c = 11)
+cat("STDAT0= ", R0, R5, "\n")
+
+# Date of transition at the end of the season through 0C-5C
+FDAT0 <- function (data.cli, data.calc, s.year, temp.c = 0) {
+  year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
+  sg <- season_growth(data.calc, s.year)
+  data.0c <- c(1, 1, 1)
+  for(i in sort(1: length(year[, 1]), decreasing = TRUE)) {
+    if(year[i, ]$TMEAN >= temp.c & i <= sg[2]) {
+      data.0c[3] <- year[i, ]$Year
+      data.0c[2] <- year[i, ]$Month
+      data.0c[1] <- year[i, ]$Day
+      return(data.0c)
+    }
+  }
+  stop("In the permafrost, the trees do not grow. Check climatico.")
+}
+R0 <- FDAT0(Minusinsk.cli, Minusinsk.cli, 1969)
+R5 <- FDAT0(Minusinsk.cli, Minusinsk.cli, 1969, 5)
+cat("FDAT0= ", R0, R5, "\n")
+
+# The duration of the season from 0C to 0C or 5C to 5C
+INTER0 <- function(data.cli, data.calc, s.year, temp.c = 0) {
+    year <- get_one_year(data.cli, s.year)
+    sg <- season_growth(data.calc, s.year)
+    lbeg <- STDAT0(data.cli, data.calc, s.year, temp.c)
+    lend <- FDAT0(data.cli, data.calc, s.year, temp.c)
+    
+    startdate <- as.Date(paste(as.character(lbeg[3]), "-", as.character(lbeg[2]), 
+        "-", as.character(lbeg[1]), sep = ""))
+    enddate <- as.Date(paste(as.character(lend[3]), "-", as.character(lend[2]), 
+        "-", as.character(lend[1]), sep = ""))
+    # http://distrland.blogspot.ru/2015/04/r-2-date-base-r.html
+    days <- as.numeric(difftime(enddate, startdate, units = "day"))
+    return(days)
+}
+I1 <- INTER0(Minusinsk.cli, Minusinsk.cli, 1965, 0)
+I2 <- INTER0(Minusinsk.cli, Minusinsk.cli, 1966, 0)
+I3 <- INTER0(Minusinsk.cli, Minusinsk.cli, 1969, 5)
+cat("INTER0= ", I1, I2, I3, "\n")
+
+# The amount of precipitation during the growing season
+SUMPREC <- function(data.cli, data.calc, s.year) {
+    new.year <- na.omit(get_one_year(data.cli, s.year))
+    sg <- season_growth(data.calc, s.year)
+    
+    return(sum(new.year$PRECIP[sg[1]:sg[2]]))
+}
+SP <- SUMPREC(Minusinsk.cli, Minusinsk.cli, 1964)
+cat("SUMPREC= ", SP, "\n")
+
+# The maximum temperature
+MAXT <- function(data.cli, s.year) {
+    TMAX <- data.cli[data.cli$Year == s.year, ]$TMEAN
+    TMAX <- na.omit(TMAX)
+    return(max(TMAX))
+}
+MT1 <- MAXT(Minusinsk.cli, 1963)
+MT2 <- MAXT(Minusinsk.cli, 1996)
+cat("MAXT= ", MT1, MT2, "\n")
+
+# Date of the maximum temperature
+MDAT <- function(data.cli, s.year) {
+  temp.max <- -99
+  data.max <- c(1, 1, 1)
+  year <- get_one_year(data.cli, s.year)
+  year <- na.omit(year)
+  for(i in 1: length(year[, 1])) {
+    if(year[i, ]$TMEAN > temp.max) {
+      temp.max <- year[i, ]$TMEAN
+      data.max[3] <- year[i, ]$Year
+      data.max[2] <- year[i, ]$Month
+      data.max[1] <- year[i, ]$Day
+    }
+  }
+  #return(list(data.max, temp.max))
+  return(data.max)
+}
+MD <- MDAT(Minusinsk.cli, 1964)
+MDS <- date2string(MD)
+cat("MDAT= ", MD, MDS, "\n")
+
+```
+### Main function eval16CliPars
+```{r eval16CliPars}
+.TT16 <- FALSE
+catE <- function(str) {
+    if (.TT16 == TRUE) 
+        cat(str)
+}
+# full function 
+eval16CliPars <- function(stationCode, data.cli, data.calc, beginYear, endYear) {
+    period <- beginYear:endYear  # the calculation of the number of observations 
+    l <- length(period)
+    # the creation of a matrix of l rows and 16 columns
+    m16 <- matrix(c(1:(l * (16 + 6))), nrow = l, ncol = (16 + 6), byrow = TRUE)
+    m16.df <- as.data.frame(m16)  #  converted to dataframe
+    firstCol <- c("Station_Code", "Year", "ObsBeg","ObsEnd","StartSG", "EndSG")
+    lastCol <- c("STDAT0", "STDAT5", "FDAT0", "FDAT5", "INTER0", "INTER5", "MAXT", "MDAT", 
+        "SUMT0", "SUMT5", "T220", "T225", "FT220", "FT225", "SPEEDT", "SUMPREC")
+    # assign names to the columns
+    df16 <- setNames(m16.df, c(firstCol, lastCol))
+    # the task is to determine the data type of each column
+    df16$Station_Code <- as.character(df16$Station_Code)
+    df16$ObsBeg <- as.character(df16$ObsBeg)
+    df16$ObsEnd <- as.character(df16$ObsEnd)
+    df16$STDAT0 <- as.character(df16$STDAT0)
+    df16$STDAT5 <- as.character(df16$STDAT5)
+    df16$FDAT0 <- as.character(df16$FDAT0)
+    df16$FDAT5 <- as.character(df16$FDAT5)
+    df16$MDAT <- as.character(df16$MDAT)
+    cat("Start eval16CliPars\n")
+    for (i in 1:l) {
+        
+        # There is the initial year of observation is finite. The intermediate may be
+        # missing. Skip the calculation cycle.
+        
+        # If the beginning of the season it is impossible to calculate a noise. For example,
+        # climatic data starts from August and the season is from may
+        if ((numberObservation(data.cli, period[i]) > 69) & (seasonBG(data.cli, period[i], war = FALSE) !=
+            FALSE)) {
+            
+            PO <- periodObservation(data.cli, period[i])
+        firstDate <- PO[1]
+        lastDate <- PO[2]
+        cat("****** Year:", period[i], "Observation:", numberObservation(data.cli, 
+            period[i]), "Period:", firstDate, lastDate, "******\n")
+        df16$Station_Code[i] <- stationCode
+        df16$Year[i] <- period[i]
+            
+            df16$ObsBeg[i] <-  firstDate
+            df16$ObsEnd[i] <-  lastDate         
+            SE <- season_growth(data.cli, period[i])
+            if(SE[1] == FALSE) SE[1]<- -9999
+            df16$StartSG[i] <- SE[1]
+            df16$EndSG[i] <- SE[2]
+            catE("The date of transition through 0C at the beginning of the growing season STDAT0\n")
+            D <- STDAT0(data.cli, data.calc, period[i])
+            df16$STDAT0[i] <- date2string(D)
+            catE("The date of transition through 5C in the beginning of the growing season STAT5\n")
+            D <- STDAT0(data.cli, data.calc, period[i], 11)
+            df16$STDAT5[i] <- date2string(D)
+            catE("Date of transition at the end of the season after 0 - 5 FDAT0\n")
+            D <- FDAT0(data.cli, data.calc, period[i])
+            df16$FDAT0[i] <- date2string(D)
+            D <- FDAT0(data.cli, data.calc, period[i], 5)
+            df16$FDAT5[i] <- date2string(D)
+            catE("The maximum temperature MAXT\n")
+            df16$MAXT[i] <- MAXT(data.cli, period[i])
+            catE("Date of the maximum temperature MDAT\n")
+            D <- MDAT(data.cli, period[i])
+            df16$MDAT[i] <- date2string(D)
+            catE("The duration of the season from 0C to 0C, 5C to 5C INTER0\n")
+            SL <- INTER0(data.cli, data.calc, period[i])
+            df16$INTER0[i] <- SL
+            df16$INTER5[i] <- INTER0(data.cli, data.calc, period[i], temp.c = 5)
+            catE("The sum of temperatures more 0C, 5C SUMT0\n")
+            df16$SUMT0[i] <- SUMT0(data.cli, data.calc, period[i])
+            df16$SUMT5[i] <- SUMT0(data.cli, data.calc, period[i], 5)
+            catE("The sum of temperatures above 0C-5C until June 22 T2205\n")
+            df16$T220[i] <- T2205(data.cli, data.calc, period[i])
+            df16$T225[i] <- T2205(data.cli, data.calc, period[i], 5)
+            catE("The sum of temperatures from 22 June to go through 0o at the end of the season FT2205\n")
+            df16$FT220[i] <- FT2205(data.cli, data.calc, period[i])
+            df16$FT225[i] <- FT2205(data.cli, data.calc, period[i], temp.c = 5)
+            catE("The rate of temperature rise of  SPEEDT\n")
+            df16$SPEEDT[i] <- SPEEDT(data.cli, period[i])
+            catE("The amount of precipitation during the growing season SUMPREC\n")
+            df16$SUMPREC[i] <- SUMPREC(data.cli, data.calc, period[i])
+        } else {
+            cat("****** Year:", period[i],"\n")
+            cat("#################### Skip a year!!!! \n")
+            df16$StartSG[i] <- -9999  # Mark the year with a bad climatical
+        }
+        
+    }
+    cat("\n")
+    # the estimated return table from function
+    return(df16)
+}
+
+
+```
+### Results of calculation
+  + Structure of the table of results
+  + First 6 lines
+  + Descriptive statisticians (one line one year)
+  + <http://www.inp.nsk.su/~baldin/DataAnalysis/R/R-10-hpc.pdf>
+  + <https://habrahabr.ru/post/168399/>
+```{r}
+if (.TT == TRUE) {
+    require(pracma)
+    tic()
+    E <- eval16CliPars("23365", Minusinsk.cli, Minusinsk.cli, 2011, 2013)
+    toc()
+    str(E)
+    head(E)
+    summary(E)
+}
+
+cat("EVAL16CLIPARS Done.\n")
+
+```
+### Write to file - format data.frame (e16cp.csv)
+```{r writenewdatasets}
+# Write to file - format data.frame
+write_eval_clipars <- function(filename.full, df.eval) {
+    write.table(file = filename.full, df.eval, row.names = FALSE, sep = ";", quote = FALSE, 
+        eol = "\n", na = "NA", dec = ",", col.names = TRUE)
+}
+write_eval_clipars(paste0(mm_path, '/23365.csv'), E)
+
+```
+### WriteXLSX
+  + <https://github.com/stan-dev/rstan/wiki/Install-Rtools-for-Windows>
+  + <https://cran.r-project.org/bin/windows/Rtools/>
+  + <https://github.com/awalker89/openxlsx/issues/111>
+```{r xlsx}
+#install.packages('pacman', dependencies=TRUE, repos='http://cran.rstudio.com/')
+#install.packages('openxlsx', dependencies=TRUE, repos='http://cran.rstudio.com/')
+if (FALSE) {
+    # Sys.setenv('R_ZIPCMD' = 'C:/Rtools/bin/zip.exe') ## path to zip.exe
+    Sys.setenv(R_ZIPCMD = paste0(mm_path, "/bin/zip.exe"))  ## path to zip.exe
+    require(openxlsx)
+    # test data.frame's
+    testWriteReadXLSX <- function(listDF, fileName, sheet = 1) {
+        openxlsx::write.xlsx(listDF, file = fileName)
+        R <- openxlsx::read.xlsx(xlsxFile = fileName, sheet = sheet, skipEmptyRows = TRUE)
+        return(R)
+    }
+    testListDF <- list(iris = iris, mtcars = mtcars, chickwts = chickwts, quakes = quakes)
+    WR <- testWriteReadXLSX(testListDF, paste0(mm_path, "/23365.xlsx"))
+    str(WR)
+    head(WR)
+    WR <- testWriteReadXLSX(list(E, testListDF[1]), paste0(mm_path, "/23365.xlsx"), sheet = 1)
+    str(WR)
+    head(WR)
+}
+
+```
+### Summary table on climate stations write to XLSX
+```{r master_location}
+if (FALSE) {
+    st <- read.csv("master-location-identifier-database-20130801.csv", header = TRUE, 
+        sep = ",", dec = ".")
+    Sys.setenv(R_ZIPCMD = paste0(mm_path, "/bin/zip.exe"))  ## path to zip.exe
+    require(openxlsx)
+    openxlsx::write.xlsx(st, file = "master-location-identifier-database-20130801.xlsx")
+}
+
+```
+### SysAdmins
+```{r sysadmn}
+# knitr: run all chunks in an Rmarkdown document                              
+# http://stackoverflow.com/questions/24753969/knitr-run-all-chunks-in-an-rmarkdown-document
+runAllChunks <- function(rmd, envir = globalenv()) {
+    tempR <- tempfile(tmpdir = ".", fileext = ".R")
+    on.exit(unlink(tempR))
+    knitr::purl(rmd, output = tempR)
+    sys.source(tempR, envir = envir)
+    unlink(tempR)
+}
+
+#runAllChunks("transect.Rmd")
+#Rmd2R("transect.Rmd", "transect.R")
+#source("transect.R")
+```
+### Tips
+```{r tips}
+# file:///home/larisa/Dropbox/24516/eval16clipars/e16cp.html
+# require(knitr); knit2html('Z:/home/larisa/Dropbox/24516/eval16clipars/e16cp.R')
+# http://master-css.com/page/brackets-code-editor
+# http://www.biostat.jhsph.edu/~rpeng/docs/R-debug-tools.pdf
+# http://tukachev.flogiston.ru/blog/?p=1352
+# http://r-analytics.blogspot.ru/p/blog-page_20.html#.V_8uqeWLS01
+#  http://kpfu.ru/docs/F568269105/metodichka_R_1.pdf
+#  http://shelly.kpfu.ru/e-ksu/docs/F1594376599/%ec%e5%f2%ee%e4%e8%f7%ea%e0_R_2.pdf
+#  http://herba.msu.ru/shipunov/software/r/cbook.pdf
+#  http://gis-lab.info/docs/books/moskalev2010_statistical_analysis_with_r.pdf
+#  https://dl.dropboxusercontent.com/u/7521662/Zaryadov%20%282010%29%20Intro%20to%20R.pdf
+#  http://www.unn.ru/pages/e-library/methodmaterial/2010/3.pdf
+#  http://gis-lab.info/docs/saveliev2012-geostat.pdf
+#  http://www.ievbras.ru/ecostat/Kiril/Article/A32/Starb.pdf
+#  http://ashipunov.info/shipunov/school/books/rbook.pdf
+#  https://dl.dropboxusercontent.com/u/7521662/Saveliev_2014_Code.rar
+#  https://dl.dropboxusercontent.com/u/7521662/Saveliev_2014_Point_Process.pdf
+#  https://github.com/ranalytics/r-tutorials/tree/master/Edition_2015
+#  http://www.ievbras.ru/ecostat/Kiril/R/Ecotox/Ecotoxicology.pdf
+#  http://www.ievbras.ru/ecostat/Kiril/R/Ecotox/Scripts_data.zip
+#  http://www.inp.nsk.su/~baldin/DataAnalysis/R/R-10-hpc.pdf
+```
+
+
+
+
+
+
+
+
+
 
 
 
