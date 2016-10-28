@@ -155,12 +155,11 @@ seasonBG <- function(years, now, war = TRUE) {
     # now)) return(FALSE) }
     return(i)
 }
-
-
-
-seasonBG(Minusinsk.cli, 1964)  # test
-
-
+test_seasonBG <- function() {
+    seasonBG(Minusinsk.cli, 1964)
+}
+#test_seasonBG()
+ 
 # By the end of the growing season to consider the following condition: when the sum of temperatures over 10 consecutive days is below 50 degrees. The end of the season - it's the last day in this sequence.
 # the end of the growing season
 seasonEG <- function(years, now) {
@@ -447,8 +446,8 @@ eval16CliPars <- function(stationCode, data.cli, data.calc, beginYear, endYear) 
         
         # If the beginning of the season it is impossible to calculate a noise. For example,
         # climatic data starts from August and the season is from may
-        if ((numberObservation(data.cli, period[i]) > 69) & (seasonBG(data.cli, period[i]) != 
-            FALSE)) {
+        if ((numberObservation(data.cli, period[i]) > 69) & (seasonBG(data.cli, period[i], war = FALSE) !=
+            FALSE)) { # Not displays a warning about the impossibility to calculate the beginning of the growing season if a year is skipped
             
             PO <- periodObservation(data.cli, period[i])
         firstDate <- PO[1]
