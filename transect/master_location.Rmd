@@ -14,34 +14,30 @@ st <- read.csv("master-location-identifier-database-20130801.csv", header = TRUE
    
 altai.code <- c(29998, 36229, 36231, 36246)
 altai.names <- c("ORLIK", "UST-KOKSA", "ONGUDAJ", "UST-ULAGAN")
-sort(altai.code)
+altai.code
 # Work with weather data <http://aisori.meteo.ru/ClimateR> [R]
 altai.aisori.files <- c("NA", "1", "NA", "NA")
-altai.files <- list.files(path = "cli/altai")
 
-lena.files <- list.files(path = "cli/lena")
 lena.code <- c("24051", "24261", "24643", "24652", "24668", "24768", "24859")
-sort(lena.code)
+lena.code
 
-lf <- list.files(path = "cli/north")
-north.files <- list.files(path = "cli/north")
+lf <-   north.files
 north.code <- c(1:length(lf))
 for (i in 1:length(lf)) {
     lf.ss <- substr(lf[i], 1, 5)
     north.code[i] <- as.numeric(lf.ss)
     cat(lf.ss, "\n")
 }
-sort(north.code)
+north.code
 
-lf <- list.files(path = "cli/yenisei")
-yenisei.files <- list.files(path = "cli/yenisei")
+lf <- yenisei.files
 yenisei.code <- c(1:length(lf))
 for (i in 1:length(lf)) {
     lf.ss <- substr(lf[i], 1, 5)
     yenisei.code[i] <- as.numeric(lf.ss)
     cat(lf.ss, "\n")
 }
-sort(yenisei.code)
+yenisei.code
 
 #
 getStationInfo <- function(stDF, stCode) {
@@ -60,12 +56,12 @@ getStationInfo <- function(stDF, stCode) {
 all.code <- c(altai.code, lena.code, north.code, yenisei.code)
 all.code <- sort(as.numeric(all.code))
 all.code
-length(all.code)
+
 ML <- matrix(c(1:(length(all.code) * 8)), nrow = length(all.code), ncol = 8, byrow = TRUE)
 ml.df <- as.data.frame(ML)  #  converted to dataframe
 ml.df <- setNames(ml.df, st.names)
 ml.df <- setNames(ml.df, st.names.alt)  # assign names to the columns
-#str(ml.df)
+
 for (i in 1:length(all.code)) {
     si <- getStationInfo(st, all.code[i])
     cat(si$wmo, as.character(si$city), round(si$lat_prp, 2), round(si$lon_prp, 2), si$elev_baro, 
@@ -78,6 +74,7 @@ for (i in 1:length(all.code)) {
     
     ml.df[i, 6] <- NA
     ml.df[i, 7] <- NA
+    ml.df[i, 8] <- NA
     
     # missing values, fill from other sources
     if(all.code[i] == 24152){
