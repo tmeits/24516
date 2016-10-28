@@ -1,13 +1,17 @@
 ### Summary table on climate stations
 #### Iljin Victor, 13.10.2016
 ```{r master_location}
-source("https://raw.githubusercontent.com/tmeits/24516/master/transect/set_work_dir.R")
+
+source("http://tmeits.github.io/24516/transect/setdw.R")
+source("http://tmeits.github.io/24516/transect/clifiles.R") 
+
 st.names <- c("Station_Code", "Station_Name", "Latitude", "Longitude", "Elevation", "Start_Y", 
-    " End_Y")
-st.names.alt <- c("wmo_xref", "city", "lat_prp", "lon_prp", "elev_baro", "start_year", "end_year")
+    "End_Y", "FIT_Y")
+st.names.alt <- c("wmo_xref", "city", "lat_prp", "lon_prp", "elev_baro", "start_year", "end_year", "fit_years")
 # http://meteocenter.net/_world_weather_stations.htm
 st <- read.csv("master-location-identifier-database-20130801.csv", header = TRUE, sep = ",", 
     dec = ".")
+   
 altai.code <- c(29998, 36229, 36231, 36246)
 altai.names <- c("ORLIK", "UST-KOKSA", "ONGUDAJ", "UST-ULAGAN")
 sort(altai.code)
@@ -39,6 +43,7 @@ for (i in 1:length(lf)) {
 }
 sort(yenisei.code)
 
+#
 getStationInfo <- function(stDF, stCode) {
     L <- length(stDF[, 1])
     for (i in 1:L) {
@@ -56,11 +61,11 @@ all.code <- c(altai.code, lena.code, north.code, yenisei.code)
 all.code <- sort(as.numeric(all.code))
 all.code
 length(all.code)
-ML <- matrix(c(1:(length(all.code) * 7)), nrow = length(all.code), ncol = 7, byrow = TRUE)
+ML <- matrix(c(1:(length(all.code) * 8)), nrow = length(all.code), ncol = 8, byrow = TRUE)
 ml.df <- as.data.frame(ML)  #  converted to dataframe
 ml.df <- setNames(ml.df, st.names)
 ml.df <- setNames(ml.df, st.names.alt)  # assign names to the columns
-str(ml.df)
+#str(ml.df)
 for (i in 1:length(all.code)) {
     si <- getStationInfo(st, all.code[i])
     cat(si$wmo, as.character(si$city), round(si$lat_prp, 2), round(si$lon_prp, 2), si$elev_baro, 
@@ -70,8 +75,11 @@ for (i in 1:length(all.code)) {
     ml.df[i, 3] <- round(si$lat_prp, 2)
     ml.df[i, 4] <- round(si$lon_prp, 2)
     ml.df[i, 5] <- si$elev_baro
+    
     ml.df[i, 6] <- NA
     ml.df[i, 7] <- NA
+    
+    # missing values, fill from other sources
     if(all.code[i] == 24152){
     ml.df[i, 5] <- 3
        ml.df[i, 2] <- "XZ}"
@@ -120,6 +128,27 @@ The certificate of state registration database No. 2015620081
 <http://meteo.ru/data/345-atmosfernye-yavleniya-sroki>
 
 ```{r}
-#runAllChunks("master_location.Rmd")
+# runAllChunks("master_location.Rmd")
+# Rmd2R("master_location.Rmd", "master_location.R")
+# source("master_location.R")
 print("End.")
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
