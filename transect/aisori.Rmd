@@ -1,6 +1,7 @@
 ### Specialized arrays for climate research
   + Sample data is provided by Web-technology "Aicore  Remote access to AAD archives"
   + <http://aisori.meteo.ru/ClimateR>
+
 #### Iljin Victor, 4.11.2016
 ```{r my_source, echo=FALSE}
 # Before running the script you can uncomment the desired path. Unnecessary comment
