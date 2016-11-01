@@ -1,5 +1,5 @@
 ### Specialized arrays for climate research
-  + Sample data is provided by Web-technology "Aicore – Remote access to AAD archives"
+  + Sample data is provided by Web-technology "Aicore  Remote access to AAD archives"
   + <http://aisori.meteo.ru/ClimateR>
 #### Iljin Victor, 4.11.2016
 ```{r my_source, echo=FALSE}
@@ -38,5 +38,53 @@ aisoriStattion.df$elev_baro <- as.numeric(as.character(aisoriStattion.df$elev_ba
 str(aisoriStattion.df )
 
 ```
+#### Read and parse the list of files with climate data
+  +  Print the number of observations and descriptive statistics from the raw file
+  +  Stupidly removed the gaps in the measurements of temperature and precipitation
 ```{r read_transect_cli}
+readAisoriCliFile <- function(url) {
+    cli <- read.csv(url, header = FALSE, sep = ";", dec = ".")
+    cli <- cli[-c(5, 7, 9, 11, 13, 14)]  # we delete excess columns
+    cli <- setNames(cli, c("Station", "Year", "Month", "Day", "TMIN", "TMEAN",
+        "TMAX", "PRECIP"))  # Assign columns names
+    return(cli)
+}
+for (i in 1:length(aisoriStattion.df$city)) {
+    cliOne <- readAisoriCliFile(paste0(mm_path, "/cli/aisori/", aisoriStattion.df$cli[i]))
+    cat("+----------------------", paste0(aisoriStattion.df$wmo_id[i], "-", aisoriStattion.df$city[i]), 
+        "----------------------+\n")
+    str(cliOne[, c(2, 6, 8)])
+    summary(cliOne[, c(2, 6, 8)])
+    summary(na.omit(cliOne[, c(2, 6, 8)]))
+    str(na.omit(cliOne[, c(2, 6, 8)]))
+    
+}
 ```
+```{r write_xlsx, echo=FALSE}
+Sys.setenv(R_ZIPCMD = paste0(mm_path, "/bin/zip.exe"))  ## path to zip.exe
+require(openxlsx)  # # WriteXLSX
+for (i in 1:length(aisoriStattion.df$city)) {
+    cliOne <- readAisoriCliFile(paste0(mm_path, "/cli/aisori/", aisoriStattion.df$cli[i]))
+    newName <- paste0(aisoriStattion.df$wmo_id[i], "-", aisoriStattion.df$city[i], 
+        ".aisori.xlsx")
+    openxlsx::write.xlsx(cliOne, file = paste0(mm_path, "/cli/aisori/", newName))
+}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
