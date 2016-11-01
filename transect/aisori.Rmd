@@ -1,0 +1,42 @@
+### Specialized arrays for climate research
+  + Sample data is provided by Web-technology "Aicore – Remote access to AAD archives"
+  + <http://aisori.meteo.ru/ClimateR>
+#### Iljin Victor, 4.11.2016
+```{r my_source, echo=FALSE}
+# Before running the script you can uncomment the desired path. Unnecessary comment
+source("http://tmeits.github.io/24516/transect/setdw.R")
+source("http://tmeits.github.io/24516/transect/clifiles.R")
+print(unique(sort(all.code))) 
+```
+####  Create data.frame - Transect Master Location
+  + Draw up a table under the file name and code of station. 
+  + Appends the name of the station
+```{r master_location, echo=FALSE}
+
+aisoriStattion <- c(
+c(20982, 'Volochanka', 70.97, 94.5, 40.2, "SCH3F1.txt"),
+c(21908, 'Dzalinda', 70.13, 113.97, 61.9, "SCH451.txt"), 
+c(21921, 'Kyusyur', 70.68, 127.4, 33, "SCH511.txt"),
+c(23365, 'Sidorovsk', 66.6, 82.5, 34, "SCH512.txt"), 
+c(23445, 'Nadym', 65.47, 72.67, 18.8, "SCH513.txt"),
+c(24125, 'Olenek', 68.5, 112.43, 207, "SCH591.txt"),
+c(24136, 'Suhana', 68.62, 118.33, 76.9, "SCH181.txt"), 
+c(24143, 'Dzhardzhan', 68.73, 124, 38.5, "SCH1F1.txt"),  
+c(24643, 'Khatyryk-Khoma', 63.95, 124.83, 76.5, "SCH361.txt"),
+c(29998, 'Orlik', 52.5, 99.82, 1374.8, "SCH362.txt"),
+c(36229, 'Ust-Koksa', 50.27, 85.62, 977.6, "SCH4A1.txt")
+)
+aisoriStattion.mat <- matrix(aisoriStattion, ncol = 6, byrow = TRUE)
+aisoriStattion.df <- as.data.frame(aisoriStattion.mat)
+aisoriStattion.df <- setNames(aisoriStattion.df, c("wmo_id", "city", "lat", "lon", "elev_baro", "cli"))
+aisoriStattion.df$cli <- as.character(aisoriStattion.df$cli)
+aisoriStattion.df$city <- as.character(aisoriStattion.df$city)
+aisoriStattion.df$wmo_id <- as.numeric(as.character(aisoriStattion.df$wmo_id))
+aisoriStattion.df$lat <- as.numeric(as.character(aisoriStattion.df$lat))
+aisoriStattion.df$lon <- as.numeric(as.character(aisoriStattion.df$lon))
+aisoriStattion.df$elev_baro <- as.numeric(as.character(aisoriStattion.df$elev_baro))
+str(aisoriStattion.df )
+
+```
+```{r read_transect_cli}
+```
