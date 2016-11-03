@@ -138,8 +138,6 @@ seasonBG <- function(years, now, war = TRUE) {
         warning(paste("Invalid begin day", " Year=", now))
         return(FALSE)
     } else return(FALSE)
-    # if (i >= yearL & war == TRUE) { warning(paste('Invalid begin day', ' Year=',
-    # now)) return(FALSE) }
     return(i)
 }
 test_seasonBG <- function() {
@@ -168,7 +166,7 @@ seasonEG <- function(years, now) {
 test_seasonEG <- function() {
     seasonEG(Minusinsk.cli, 1961)
 }
-# test_seasonEG
+# test_seasonEG()
 
 # Beginning and end of the growing season in the specified year
 season_growth <- function(data.cli, needYear) {
@@ -263,11 +261,12 @@ FT2205 <- function(data.cli, data.calc, s.year, temp.c = 0) {
     }
     return(sum_temp)
 }
-if (.TT == TRUE) {
+test_FT2205 <-function(){
     sum_temp0 <- FT2205(Minusinsk.cli, Minusinsk.cli, 1965, 0)
     sum_temp5 <- FT2205(Minusinsk.cli, Minusinsk.cli, 1965, 5)
     cat("FT2205= ", sum_temp0, sum_temp5, "\n")
 }
+# test_FT2205()
 
 # The sum of temperatures above 0C until June 22/the Sum of temperatures above
 # 5C until June 22
@@ -415,6 +414,10 @@ cat("MDAT= ", MD, MDS, "\n")
 ```
 ### Main function cliChar
 ```{r cliChar}
+catE <- function(strg, echo = FALSE) {
+    if (echo == TRUE) 
+        cat(strg)
+}
 
 cliChar <- function(stationCode, data.cli, data.calc, beginYear, endYear) {
     period <- beginYear:endYear  # the calculation of the number of observations 
@@ -450,7 +453,7 @@ cliChar <- function(stationCode, data.cli, data.calc, beginYear, endYear) {
             PO <- periodObservation(data.cli, period[i])
         firstDate <- PO[1]
         lastDate <- PO[2]
-        cat("****** Year:", period[i], "Observation:", numberObservation(data.cli, 
+        cat("\n\n****** Year:", period[i], "Observation:", numberObservation(data.cli, 
             period[i]), "Period:", firstDate, lastDate, "******\n")
         df16$Station_Code[i] <- stationCode
         df16$Year[i] <- period[i]
@@ -512,16 +515,20 @@ cat("cliChar Done.\n")
 ### Test cliChar
 ```{r sysadmn}
 #
-E <- eval16CliPars("23365", Minusinsk.cli, Minusinsk.cli, 2011, 2013)
+E <- cliChar("23365", Minusinsk.cli, Minusinsk.cli, 2011, 2013)
 print(summary(E))
 
 ```
 ### Tips and Trics
 ```{r tips}
+run <- function() {
+    Rmd2R("clichar.Rmd", "clichar.R")
+    source("clichar.R")
+}
 
 #runAllChunks("clichar.Rmd")
-#Rmd2R("clichar.Rmd", "clichar.R")
-#source("clichar.R")
+
+# http://pbil.univ-lyon1.fr/Rweb/
 
 # http://www.biostat.jhsph.edu/~rpeng/docs/R-debug-tools.pdf
 # http://tukachev.flogiston.ru/blog/?p=1352
