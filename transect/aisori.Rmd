@@ -5,6 +5,7 @@
 #### Iljin Victor, 4.11.2016
 ```{r my_source, echo=FALSE}
 # Before running the script you can uncomment the desired path. Unnecessary comment
+rm(list=ls())
 source("http://tmeits.github.io/24516/transect/setdw.R")
 source("http://tmeits.github.io/24516/transect/clifiles.R")
 print(unique(sort(all.code))) 
@@ -63,24 +64,40 @@ for (i in 1:length(aisoriStattion.df$city)) {
 }
 ```
 ```{r write_xlsx_csv, echo=FALSE}
-Sys.setenv(R_ZIPCMD = paste0(mm_path, "/bin/zip.exe"))  ## path to zip.exe
-require(openxlsx)  # # WriteXLSX
-for (i in 1:length(aisoriStattion.df$city)) {
-    cliOne <- readAisoriCliFile(paste0(mm_path, "/cli/aisori/", aisoriStattion.df$cli[i]))
-    newName <- paste0(aisoriStattion.df$wmo_id[i], "_", aisoriStattion.df$city[i], 
-        ".", aisoriStattion.df$beg_year[i], "-", aisoriStattion.df$end_year[i])
-    openxlsx::write.xlsx(cliOne, file = paste0(mm_path, "/cli/aisori/", 
-        newName, ".aisori.xlsx"))
-    write.csv2(cliOne, file = paste0(mm_path, "/cli/aisori/", newName, 
-        ".aisori.csv"), row.names = FALSE, sep = ";", na = "")
+write_xlsx_csv <- function() {
+    Sys.setenv(R_ZIPCMD = paste0(mm_path, "/bin/zip.exe"))  ## path to zip.exe
+    require(openxlsx)  # # WriteXLSX
+    for (i in 1:length(aisoriStattion.df$city)) {
+        cliOne <- readAisoriCliFile(paste0(mm_path, "/cli/aisori/", aisoriStattion.df$cli[i]))
+        newName <- paste0(aisoriStattion.df$wmo_id[i], "_", aisoriStattion.df$city[i], 
+            ".", aisoriStattion.df$beg_year[i], "-", aisoriStattion.df$end_year[i])
+        openxlsx::write.xlsx(cliOne, file = paste0(mm_path, "/cli/aisori/", 
+            newName, ".aisori.xlsx"))
+        write.csv2(cliOne, file = paste0(mm_path, "/cli/aisori/", newName, 
+            ".aisori.csv"), row.names = FALSE, sep = ";", na = "")
+    }
+    openxlsx::write.xlsx(aisoriStattion.df, file = paste0(mm_path, "/cli/aisori/", 
+        "aisori_station.xlsx"))
+    write.csv2(aisoriStattion.df, file = paste0(mm_path, "/cli/aisori/", 
+        "aisori_station.csv"), row.names = FALSE)
+    
 }
-openxlsx::write.xlsx(aisoriStattion.df, file = paste0(mm_path, "/cli/aisori/", 
-    "aisori_station.xlsx"))
-write.csv2(aisoriStattion.df, file = paste0(mm_path, "/cli/aisori/", "aisori_station.csv"), row.names = FALSE)
 
+# write_xlsx_csv()
 ```
 #### Climatic characteristics calculated on daily data of temperature and precipitation at weather stations transect
-```{r par, echo=FALSE}
+```{r clichar, echo=FALSE}
+source_clichar <- function() {
+    Rmd2R("clichar.Rmd", "clichar.R")
+    source("clichar.R")
+}
+source_clichar()
+i<-1
+code <- aisoriStattion.df$wmo_id[i]
+cli <- readAisoriCliFile(paste0(mm_path, "/cli/aisori/", aisoriStattion.df$cli[i])) 
+begy <- aisoriStattion.df$beg_year[i]
+endy <- aisoriStattion.df$end_year[i]
+P<-cliChar(paste0(code), cli,cli, begy, endy)
 
 ```
 
