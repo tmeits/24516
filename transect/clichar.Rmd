@@ -430,6 +430,7 @@ cliChar <- function(stationCode, data.cli, data.calc, beginYear, endYear) {
         "SUMT0", "SUMT5", "T220", "T225", "FT220", "FT225", "SPEEDT", "SUMPREC")
     # assign names to the columns
     df16 <- setNames(m16.df, c(firstCol, lastCol))
+    df16[,] <- NA
     # the task is to determine the data type of each column
     df16$Station_Code <- as.character(df16$Station_Code)
     df16$ObsBeg <- as.character(df16$ObsBeg)
@@ -439,7 +440,8 @@ cliChar <- function(stationCode, data.cli, data.calc, beginYear, endYear) {
     df16$FDAT0 <- as.character(df16$FDAT0)
     df16$FDAT5 <- as.character(df16$FDAT5)
     df16$MDAT <- as.character(df16$MDAT)
-    cat("Start eval16CliPars\n")
+    df16[,] <- NA
+    cat("Start cliChar\n")
     for (i in 1:l) {
         
         # There is the initial year of observation is finite. The intermediate may be
@@ -453,7 +455,7 @@ cliChar <- function(stationCode, data.cli, data.calc, beginYear, endYear) {
             PO <- periodObservation(data.cli, period[i])
         firstDate <- PO[1]
         lastDate <- PO[2]
-        cat("\n\n****** Year:", period[i], "Observation:", numberObservation(data.cli, 
+        cat("\n****** Year:", period[i], "Observation:", numberObservation(data.cli, 
             period[i]), "Period:", firstDate, lastDate, "******\n")
         df16$Station_Code[i] <- stationCode
         df16$Year[i] <- period[i]
@@ -505,11 +507,10 @@ cliChar <- function(stationCode, data.cli, data.calc, beginYear, endYear) {
         
     }
     cat("\n")
+    cat("cliChar Done.\n")
     # the estimated return table from function
     return(df16)
 }
-
-cat("cliChar Done.\n")
 
 ```
 ### Test cliChar
