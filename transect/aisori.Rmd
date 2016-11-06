@@ -7,8 +7,6 @@
 # Before running the script you can uncomment the desired path. Unnecessary comment
 rm(list=ls())
 source("http://tmeits.github.io/24516/transect/setdw.R")
-source("http://tmeits.github.io/24516/transect/clifiles.R")
-print(unique(sort(all.code))) 
 ```
 ####  Create data.frame - Transect Master Location
   + Draw up a table under the file name and code of station. 
@@ -92,13 +90,19 @@ source_clichar <- function() {
     source("clichar.R")
 }
 source_clichar()
-i<-1
+t1 <- Sys.time()
+i <- 4
 code <- aisoriStattion.df$wmo_id[i]
-cli <- readAisoriCliFile(paste0(mm_path, "/cli/aisori/", aisoriStattion.df$cli[i])) 
+cli <- readAisoriCliFile(paste0(mm_path, "/cli/aisori/", aisoriStattion.df$cli[i]))
 begy <- aisoriStattion.df$beg_year[i]
 endy <- aisoriStattion.df$end_year[i]
-P<-cliChar(paste0(code), cli,cli, begy, endy)
+P <- cliChar(paste0(code), cli, cli, begy, endy)
+P <- na.omit(P[P$StartSG != -9999, ])
+cat("Time= ", Sys.time() - t1, "\n")
 
+
+```
+```{r write_char, echo=FALSE}
 ```
 
 
