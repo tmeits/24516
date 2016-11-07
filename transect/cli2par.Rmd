@@ -10,13 +10,19 @@
 
 ```{r init_source, echo=FALSE}
 # To display the output of a code chunk but not the underlying R code, you specify the echo=FALSE option:
+rm(list=ls())
+assign("last.warning", NULL, envir = baseenv())
 source("http://tmeits.github.io/24516/transect/setdw.R")
-source("http://tmeits.github.io/24516/transect/clifiles.R")
-# Rmd2R("transect.Rmd", "transect.R")
-# source("transect.R")
-# source("transect.R", echo=FALSE, max.deparse.length=150)
-# Rmd2R("cli2par.Rmd", "cli2par.R")
+source("clifiles.R")
+source_transect <- function() {
+    Rmd2R("transect.Rmd", "transect.R")
+    source("transect.R")
+    Rmd2R("cli2par.Rmd", "cli2par.R") 
+}
+
+# source_transect()
 # source("cli2par.R")
+
 cat("downloadable list of files containing climatic measurements\n")
 
 ```
@@ -31,7 +37,7 @@ getCliStation <- function(path, fileName) {
 }
 # main function
 cli2par <- function(path, listFiles, info = TRUE, methodNA = TRUE) {
-    listE <- list(1:length(listFiles))
+    resultT <- list()
     for (i in 1:length(listFiles)) {
         D <- read.csv(paste0(path, listFiles[i]), header = FALSE, sep = "", dec = ".")
         # The names of each column assign
@@ -76,7 +82,7 @@ cli2par <- function(path, listFiles, info = TRUE, methodNA = TRUE) {
             E <- eval16CliPars(substr(listFiles[i], 1, 5), D, D, startYear, endYear)
         }
         # Deleted row is marked as bad
-        E <- E[E$StartSG != -9999, ]
+        E <- na.omit(E[E$StartSG != -9999, ])
         #todo add tryCatch
         #print(str(E))
         print(head(E))
@@ -84,10 +90,12 @@ cli2par <- function(path, listFiles, info = TRUE, methodNA = TRUE) {
         
         Sys.setenv(R_ZIPCMD = paste0(path, "/zip.exe"))  ## path to zip.exe
         require(openxlsx)  # # WriteXLSX
-        openxlsx::write.xlsx(E, file = paste0(path, "/cli2par/", listFiles[i], ".xlsx"))
+        #newName <- sub(".txt", ".par", listFiles[i], fixed=TRUE)
+        #openxlsx::write.xlsx(E, file = paste0(path, "/cli2par/", newName , ".xlsx"))
         # Save result to list listE[i] <- E
+        resultT[[i]] <- E
     }
-    return(E)
+    return(resultT)
 }
 ```
 ###  For all of the weather stations included in the transect
@@ -95,8 +103,10 @@ cli2par <- function(path, listFiles, info = TRUE, methodNA = TRUE) {
 ```{r calculate_transect, echo=FALSE, message = FALSE, warnings = FALSE}
 if (TRUE) {
     bt <- Sys.time()
-    par.alatai <- cli2par(paste0(mm_path, "/cli/altai/"), altai.files, 
+    options(warn=-1)
+    par.altai <- cli2par(paste0(mm_path, "/cli/altai/"), altai.files, 
         info = TRUE)
+    options(warn=0)
     par.lena <- cli2par(paste0(mm_path, "/cli/lena/"), lena.files, info = TRUE)
     par.north <- cli2par(paste0(mm_path, "/cli/north/"), north.files, 
         info = TRUE)
