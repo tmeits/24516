@@ -91,18 +91,139 @@ source_clichar <- function() {
 }
 source_clichar()
 t1 <- Sys.time()
-i <- 4
-code <- aisoriStattion.df$wmo_id[i]
-cli <- readAisoriCliFile(paste0(mm_path, "/cli/aisori/", aisoriStattion.df$cli[i]))
-begy <- aisoriStattion.df$beg_year[i]
-endy <- aisoriStattion.df$end_year[i]
-P <- cliChar(paste0(code), cli, cli, begy, endy)
-P <- na.omit(P[P$StartSG != -9999, ])
+result <- list()
+limit <- length(aisoriStattion.df$wmo_id)
+
+for (i in 1:limit) {
+    cat("+------",aisoriStattion.df$city[i],"------+\n")
+    code <- aisoriStattion.df$wmo_id[i]
+    cli <- readAisoriCliFile(paste0(mm_path, "/cli/aisori/", aisoriStattion.df$cli[i]))
+    begy <- aisoriStattion.df$beg_year[i]
+    endy <- aisoriStattion.df$end_year[i]
+    P <- cliChar(paste0(code), cli, cli, begy, endy)
+    # https://cran.r-project.org/doc/contrib/de_Jonge+van_der_Loo-Introduction_to_data_cleaning_with_R.pdf
+    P.na <- na.omit(P[P$StartSG != -9999, ])
+    result[[i]] <- P.na  # https://www.r-bloggers.com/concatenating-a-list-of-data-frames/
+}
+
 cat("Time= ", Sys.time() - t1, "\n")
 
 
 ```
 ```{r write_char, echo=FALSE}
+writeCharXLSX <- function(listChar) {
+    Sys.setenv(R_ZIPCMD = paste0(mm_path, "/bin/zip.exe"))  ## path to zip.exe
+    require(openxlsx)  # # WriteXLSX
+    for (i in 1:length(aisoriStattion.df$city)) {
+        newName <- paste0(aisoriStattion.df$wmo_id[i], "_", aisoriStattion.df$city[i], 
+            ".", aisoriStattion.df$beg_year[i], "-", aisoriStattion.df$end_year[i])
+        openxlsx::write.xlsx(listChar[i], file = paste0(mm_path, "/cli/aisori/", 
+            newName, ".aisori.par.xlsx"))
+        write.csv2(listChar[i], file = paste0(mm_path, "/cli/aisori/", newName, 
+            ".aisori.par.csv"), row.names = FALSE, sep = ";", na = "")
+    }
+}
+#writeCharXLSX(result)
+#openxlsx::write.xlsx(result, file = paste0(mm_path, "/cli/aisori/","aisori.par.xlsx"))
+# save(result, aisoriStattion.df, file =  paste0(mm_path, "/cli/aisori/","aisori.Rdata"))
+```
+#### 
+
+for each parameter and each station to calculate the linear trend (y=a+bx, where y is a Klim. parameter x-a). Coverage while every station is different. It is necessary to calculate the trends (only need a straight angle nikalna b) for the period from 1970 to the end date of the observations. And form a trail. table (each cell line):
+Section code b-b parameter1-parameter2 etc.
+```{r trend, echo=FALSE}
+# для каждого параметра и каждой станции рассчитать линейный тренд (y=a+bx, где y - клим. параметр, x-год). Время покрытия у всех станций разное. Надо рассчитать тренды (нужен только угол наколна прямой b) за период с 1970 по дату конца наблюдений. И сформировать след. таблицу (каждый участок строка):
+# Код участка  b-parameter1 b-parameter2 и т.д.
+# .....  .......  ........  ......
+# load(file =  paste0(mm_path, "/cli/aisori/","aisori.Rdata"))
+
+# Elapsed days from the beginning of the year
+Days <- function(strDate) {
+    Y <- as.numeric(format(strDate, "%Y"))
+    m <- as.numeric(format(strDate, "%m"))
+    d <- as.numeric(format(strDate, "%d"))
+    return(num_days(Y, m, d))
+}
+
+result1 <- result
+
+colNames.b <- c("sec_code", "b_STDAT0", "b_STDAT5", "b_FDAT0", "b_FDAT5", 
+    "b_INTER0", "b_INTER5", "b_MAXT", "b_MDAT", "b_SUMT0", "b_SUMT5", 
+    "b_T220", "b_T225", "b_FT220", "b_FT225", "b_SPEEDT", "b_SUMPREC")
+
+linearTrends <- as.data.frame(matrix(0, ncol = 17, nrow = 11, byrow = TRUE))
+linearTrends <- setNames(linearTrends, colNames.b)
+
+for (i in 1:11) {
+    sti <- as.data.frame(result1[i])
+    code <- sti[1, 1]  # code
+    linearTrends[i, 1] <- code
+    sti.trunc <- sti[sti$Year >= 1970, 2]  # the number of years
+    sti.trunc.all <- sti[sti$Year >= 1970, ]
+    
+    DT <- data.frame(Year = sti.trunc, Par = sti.trunc.all$INTER0)
+    #todo regression can return NA
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_INTER0"] <- as.numeric(DT.lm$coefficients[2])
+    
+    DT <- data.frame(Year = sti.trunc, Par = sti.trunc.all$INTER5)
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_INTER5"] <- as.numeric(DT.lm$coefficients[2])
+    
+    DT <- data.frame(Year = sti.trunc, Par = sti.trunc.all$MAXT)
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_MAXT"] <- as.numeric(DT.lm$coefficients[2])
+    
+    DT <- data.frame(Year = sti.trunc, Par = sti.trunc.all$SUMT0)
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_SUMT0"] <- as.numeric(DT.lm$coefficients[2])
+    
+    DT <- data.frame(Year = sti.trunc, Par = sti.trunc.all$SUMT0)
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_SUMT0"] <- as.numeric(DT.lm$coefficients[2])
+    
+    DT <- data.frame(Year = sti.trunc, Par = sti.trunc.all$SUMT5)
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_SUMT5"] <- as.numeric(DT.lm$coefficients[2])
+    
+    DT <- data.frame(Year = sti.trunc, Par = sti.trunc.all$T220)
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_T220"] <- as.numeric(DT.lm$coefficients[2])
+    
+    DT <- data.frame(Year = sti.trunc, Par = sti.trunc.all$T225)
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_T225"] <- as.numeric(DT.lm$coefficients[2])
+    
+    DT <- data.frame(Year = sti.trunc, Par = sti.trunc.all$FT220)
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_FT220"] <- as.numeric(DT.lm$coefficients[2])
+    
+    DT <- data.frame(Year = sti.trunc, Par = sti.trunc.all$FT225)
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_FT225"] <- as.numeric(DT.lm$coefficients[2])
+    
+    DT <- data.frame(Year = sti.trunc, Par = sti.trunc.all$SPEEDT)
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_SPEEDT"] <- as.numeric(DT.lm$coefficients[2])
+    
+    DT <- data.frame(Year = sti.trunc, Par = sti.trunc.all$SUMPREC)
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_SUMPREC"] <- as.numeric(DT.lm$coefficients[2])
+      
+    # http://www.statmethods.net/input/dates.html
+    ds <- as.Date(sti.trunc.all[, 1 + 6], "%d-%m-%Y")
+    # https://nsaunders.wordpress.com/2010/08/20/a-brief-introduction-to-apply-in-r/
+    DT <- data.frame(Year = sti.trunc, Par = sapply(ds, Days))
+    # plot(DT) abline(lm(formula = DT$Par ~ DT$Year, data = DT))
+    # print(summary(lm(formula = DT$Par ~ DT$Year, data = DT)))
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_STDAT0"] <- as.numeric(DT.lm$coefficients[2])
+    
+}
+linearTrends
+
+      
+        
 ```
 
 
