@@ -551,23 +551,3 @@ run <- function() {
 #  http://www.inp.nsk.su/~baldin/DataAnalysis/R/R-10-hpc.pdf
 
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
