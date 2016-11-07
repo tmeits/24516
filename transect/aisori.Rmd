@@ -125,7 +125,7 @@ writeCharXLSX <- function(listChar) {
 }
 #writeCharXLSX(result)
 #openxlsx::write.xlsx(result, file = paste0(mm_path, "/cli/aisori/","aisori.par.xlsx"))
-# save(result, aisoriStattion.df, file =  paste0(mm_path, "/cli/aisori/","aisori.Rdata"))
+# save(linearTrends, result, aisoriStattion.df, file =  paste0(mm_path, "/cli/aisori/","aisori.Rdata"))
 ```
 #### 
 
@@ -145,7 +145,16 @@ Days <- function(strDate) {
     return(num_days(Y, m, d))
 }
 
+plotLM <- function(DT, view = FALSE) {
+    if (view == TRUE) {
+        plot(DT)
+        abline(lm(formula = DT$Par ~ DT$Year, data = DT))
+        print(summary(lm(formula = DT$Par ~ DT$Year, data = DT)))
+    }
+}
+
 result1 <- result
+viewLT <- FALSE
 
 colNames.b <- c("sec_code", "b_STDAT0", "b_STDAT5", "b_FDAT0", "b_FDAT5", 
     "b_INTER0", "b_INTER5", "b_MAXT", "b_MDAT", "b_SUMT0", "b_SUMT5", 
@@ -165,6 +174,7 @@ for (i in 1:11) {
     #todo regression can return NA
     DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
     linearTrends[i, "b_INTER0"] <- as.numeric(DT.lm$coefficients[2])
+    plotLM(DT, viewLT)
     
     DT <- data.frame(Year = sti.trunc, Par = sti.trunc.all$INTER5)
     DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
@@ -219,13 +229,35 @@ for (i in 1:11) {
     DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
     linearTrends[i, "b_STDAT0"] <- as.numeric(DT.lm$coefficients[2])
     
+    ds <- as.Date(sti.trunc.all$STDAT5, "%d-%m-%Y")
+    DT <- data.frame(Year = sti.trunc, Par = sapply(ds, Days))
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_STDAT5"] <- as.numeric(DT.lm$coefficients[2])
+    
+    ds <- as.Date(sti.trunc.all$FDAT0, "%d-%m-%Y")
+    DT <- data.frame(Year = sti.trunc, Par = sapply(ds, Days))
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_FDAT0"] <- as.numeric(DT.lm$coefficients[2])
+    
+    ds <- as.Date(sti.trunc.all$FDAT5, "%d-%m-%Y")
+    DT <- data.frame(Year = sti.trunc, Par = sapply(ds, Days))
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_FDAT5"] <- as.numeric(DT.lm$coefficients[2])
+    
+    ds <- as.Date(sti.trunc.all$MDAT, "%d-%m-%Y")
+    DT <- data.frame(Year = sti.trunc, Par = sapply(ds, Days))
+    DT.lm <- lm(formula = DT$Par ~ DT$Year, data = DT)
+    linearTrends[i, "b_MDAT"] <- as.numeric(DT.lm$coefficients[2])
+    
 }
 linearTrends
-
-      
-        
+       
 ```
+```{r write_linear_trande}
+Sys.setenv(R_ZIPCMD = paste0(mm_path, "/bin/zip.exe"))  ## path to zip.exe
+require(openxlsx)  # # WriteXLSX
 
+```
 
 
 
