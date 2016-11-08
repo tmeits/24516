@@ -106,17 +106,20 @@ if (TRUE) {
     options(warn=-1)
     par.altai <- cli2par(paste0(mm_path, "/cli/altai/"), altai.files, 
         info = TRUE)
-    options(warn=0)
     par.lena <- cli2par(paste0(mm_path, "/cli/lena/"), lena.files, info = TRUE)
     par.north <- cli2par(paste0(mm_path, "/cli/north/"), north.files, 
         info = TRUE)
     par.yenisei <- cli2par(paste0(mm_path, "/cli/yenisei/"), yenisei.files, 
         info = TRUE)
+    transect.par <- unlist(list(par.altai, par.lena, par.north, par.yenisei), recursive = FALSE)    
+        
     et <- Sys.time()
     print(et-bt)
+    options(warn=0)
 }   else {  # The calculation run parameters for a particular station
 
 }
+save(transect.par, file =  paste0(mm_path, "/cli/aisori/","transect.Rdata"))
 
 ```
 ```{r test, eval=FALSE}
