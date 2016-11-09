@@ -1,0 +1,99 @@
+####  Using neural network for regression CRN
+
+A neural network (NN) model is very similar to a non-linear regression model, with the exception that the former can handle an incredibly large amount of model parameters. For this reason, neural network models are said to have the ability to approximate any continuous function.
+
+Neural network is very good at learning non-linear function and also multiple outputs can be learnt at the same time. However, the training time is relatively long and it is also susceptible to local minimum traps. This can be mitigated by doing multiple rounds and pick the best learned model.
+
+
+```{r init}
+rm(list=ls())
+assign("last.warning", NULL, envir = baseenv())
+source("http://tmeits.github.io/24516/transect/setdw.R")
+#nnet_path<-paste0(mm_path,"/nnet_transect")
+```
+#### Read Ivan cliStation adn CRN transect
+
+  + <https://www.ncdc.noaa.gov/paleo/meas_table.html>
+```{r read_data}
+Sys.setenv(R_ZIPCMD = paste0(mm_path, "/bin/zip.exe"))  # path to zip.exe
+require(openxlsx)  
+# Read data from an Excel file or Workbook object into a data.frame
+altai_crn <- openxlsx::read.xlsx(paste0(nnet_path, "/altai_crn.xlsx"), sheet = 3, startRow = 1, colNames = TRUE, rowNames = FALSE, detectDates = FALSE, skipEmptyRows = TRUE, rows = NULL, cols = NULL, check.names = FALSE, namedRegion = NULL)
+
+altai_crn <- openxlsx::read.xlsx("C:/Users/IVA/Dropbox/24516/nnet_transect/altai_crn.xlsx", sheet = 3)
+```
+####  
+```{r neuralnet}
+library(neuralnet)
+library(NeuralNetTools)
+#install.packages('neuralnet')
+library("neuralnet")
+ 
+ 
+#Generate 50 random numbers uniformly distributed between 0 and 100
+#And store them as a dataframe
+traininginput <-  as.data.frame(runif(50, min=0, max=100))
+trainingoutput <- sqrt(traininginput)
+ 
+#Column bind the data into one variable
+trainingdata <- cbind(traininginput,trainingoutput)
+colnames(trainingdata) <- c("Input","Output")
+ 
+#Train the neural network
+#Going to have 10 hidden layers
+#Threshold is a numeric value specifying the threshold for the partial
+#derivatives of the error function as stopping criteria.
+net.sqrt <- neuralnet(Output~Input,trainingdata, hidden=c(6, 11,  7), rep = 10, linear.output = FALSE, threshold=0.01)
+print(net.sqrt)
+#par(mar = numeric(4), family = 'serif')
+plotnet(net.sqrt, alpha=0.6) 
+#Plot the neural network
+plot(net.sqrt)
+ 
+#Test the neural network on some training data
+testdata <- as.data.frame((1:10)^2) #Generate some squared numbers
+net.results <- compute(net.sqrt, testdata) #Run them through the neural network
+ 
+#Lets see what properties net.sqrt has
+ls(net.results)
+ 
+#Lets see the results
+print(net.results$net.result)
+ 
+#Lets display a better version of the results
+cleanoutput <- cbind(testdata,sqrt(testdata), as.data.frame(net.results$net.result))
+colnames(cleanoutput) <- c("Input","Expected Output","Neural Net Output")
+print(cleanoutput)
+
+plot(BostonHousing$medv, nnet.predict, main="Neural network predictions vs actual", xlab="Actual")
+
+```
+```{r plot_net}
+library(neuralnet)
+ 
+#response
+CRN<-c(rep(0,7),1)
+OR<-c(0,rep(1,7))
+ 
+#response with predictors
+binary.data<-data.frame(expand.grid(c(0,1),c(0,1),c(0,1)),CRN,OR)
+colnames(binary.data) <- c("Temp","Prec","Soil","CRN","OR")
+ 
+#model
+net<-neuralnet(CRN~Temp+Prec+Soil, binary.data,hidden=c(6,12,8),rep=10,err.fct="ce",linear.output=FALSE)
+ 
+#plot ouput
+par(mar=numeric(4),family='serif')
+plotnet(net)
+
+```
+```{r tips}
+# https://www.r-bloggers.com/fitting-a-neural-network-in-r-neuralnet-package/
+# https://heuristically.wordpress.com/2011/11/17/using-neural-network-for-regression/
+# https://www.r-bloggers.com/general-regression-neural-network-with-r/
+# http://gekkoquant.com/2012/05/26/neural-networks-with-r-simple-example/
+# https://rpubs.com/mbaumer/NeuralNetworks
+# https://beckmw.wordpress.com/2014/12/20/neuralnettools-1-0-0-now-on-cran/
+# https://bzstat.wordpress.com/2011/07/10/using-lib-fann-in-r-via-rcpp/
+# install.packages('NeuralNetTools', dependencies=TRUE, repos='http://cran.rstudio.com/')
+```
