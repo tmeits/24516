@@ -17,14 +17,20 @@ source("http://tmeits.github.io/24516/transect/setdw.R")
 ```{r read_data}
 Sys.setenv(R_ZIPCMD = paste0(mm_path, "/bin/zip.exe"))  # path to zip.exe
 require(openxlsx)  
+# http://stackoverflow.com/questions/34172353/how-do-i-modify-an-existing-a-sheet-in-an-excel-workbook-using-openxlsx-package
 # Read data from an Excel file or Workbook object into a data.frame
 altai_crn <- openxlsx::read.xlsx(paste0(nnet_path, "/altai_crn.xlsx"), sheet = 3, startRow = 1, colNames = TRUE, rowNames = FALSE, detectDates = FALSE, skipEmptyRows = TRUE, rows = NULL, cols = NULL, check.names = FALSE, namedRegion = NULL)
 
-altai_crn <- openxlsx::read.xlsx("C:/Users/IVA/Dropbox/24516/nnet_transect/altai_crn.xlsx", sheet = 3)
+lena_crn <- openxlsx::read.xlsx(paste0(nnet_path, "/lena_crn.xlsx"), sheet = 1, startRow = 1, colNames = TRUE, rowNames = FALSE, detectDates = FALSE, skipEmptyRows = TRUE, rows = NULL, cols = NULL, check.names = FALSE, namedRegion = NULL)
+
+
+
+#altai_crn <- openxlsx::read.xlsx("C:/Users/IVA/Dropbox/24516/nnet_transect/altai_crn.xlsx", sheet = 3)
 ```
 ####  
 ```{r neuralnet}
 library(neuralnet)
+# https://rdrr.io/cran/neuralnet/
 library(NeuralNetTools)
 #install.packages('neuralnet')
 library("neuralnet")
