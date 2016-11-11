@@ -9,7 +9,7 @@ Neural network is very good at learning non-linear function and also multiple ou
 rm(list=ls())
 assign("last.warning", NULL, envir = baseenv())
 source("http://tmeits.github.io/24516/transect/setdw.R")
-#nnet_path<-paste0(mm_path,"/nnet_transect")
+aisori_path<-paste0(mm_path,"/cli/aisori")
 ```
 #### Read Ivan cliStation adn CRN transect
 
@@ -23,42 +23,58 @@ altai_crn <- openxlsx::read.xlsx(paste0(nnet_path, "/altai_crn.xlsx"), sheet = 3
 
 lena_crn <- openxlsx::read.xlsx(paste0(nnet_path, "/lena_crn.xlsx"), sheet = 1, startRow = 1, colNames = TRUE, rowNames = FALSE, detectDates = FALSE, skipEmptyRows = TRUE, rows = NULL, cols = NULL, check.names = FALSE, namedRegion = NULL)
 
+north_crn <- openxlsx::read.xlsx(paste0(nnet_path, "/north_crn.xlsx"), sheet = 1, startRow = 1, colNames = TRUE, rowNames = FALSE, detectDates = FALSE, skipEmptyRows = TRUE, rows = NULL, cols = NULL, check.names = FALSE, namedRegion = NULL)
 
+yenisey_crn <- openxlsx::read.xlsx(paste0(nnet_path, "/yenisey_crn.xlsx"), sheet = 1, startRow = 1, colNames = TRUE, rowNames = FALSE, detectDates = FALSE, skipEmptyRows = TRUE, rows = NULL, cols = NULL, check.names = FALSE, namedRegion = NULL)
+
+save(altai_crn, lena_crn, north_crn, yenisey_crn, file =  paste0(nnet_path, "/nnet.Rdata"))
 
 #altai_crn <- openxlsx::read.xlsx("C:/Users/IVA/Dropbox/24516/nnet_transect/altai_crn.xlsx", sheet = 3)
 ```
-####  
+#### 
+
+  + <https://rdrr.io/cran/neuralnet/> 
 ```{r neuralnet}
 library(neuralnet)
-# https://rdrr.io/cran/neuralnet/
 library(NeuralNetTools)
-#install.packages('neuralnet')
-library("neuralnet")
- 
- 
-#Generate 50 random numbers uniformly distributed between 0 and 100
-#And store them as a dataframe
-traininginput <-  as.data.frame(runif(50, min=0, max=100))
-trainingoutput <- sqrt(traininginput)
+
+# Make up some new data
+n <- 65
+mint <- -40
+maxt <-40
+traininginput <- data.frame(m1 = runif(n, mint, maxt), m2 = runif(n, mint, maxt), 
+    m3 = runif(n, mint, maxt), m4 = runif(n, mint, maxt), m5 = runif(n, 
+        mint, maxt), m6 = runif(n, mint, maxt), m7 = runif(n, mint, maxt), 
+    m8 = runif(n, mint, maxt), m9 = runif(n, mint, maxt), m10 = runif(n, 
+        mint, maxt), m11 = runif(n, mint, maxt), m12 = runif(n, mint, 
+        maxt))
+traininginput<-round(traininginput,2)
+trainingoutput<-apply(traininginput, 1, function(x) sqrt(abs(sum(x))))
+trainingoutput<-as.vector(trainingoutput)  # CRN
+
  
 #Column bind the data into one variable
-trainingdata <- cbind(traininginput,trainingoutput)
-colnames(trainingdata) <- c("Input","Output")
+trainingdata <- cbind(traininginput, CRN=trainingoutput)
+#colnames(trainingdata) <- c("Input","Output")
  
 #Train the neural network
 #Going to have 10 hidden layers
 #Threshold is a numeric value specifying the threshold for the partial
 #derivatives of the error function as stopping criteria.
-net.sqrt <- neuralnet(Output~Input,trainingdata, hidden=c(6, 11,  7), rep = 10, linear.output = FALSE, threshold=0.01)
-print(net.sqrt)
+net.crn <- neuralnet(CRN~m1+m2+m3+m4+m5+m6+m7+m8+m9+m10+m11+m12,trainingdata, hidden=c(15), rep = 1, linear.output = TRUE, threshold=0.01)
+
+
+
+print(net.crn)
 #par(mar = numeric(4), family = 'serif')
-plotnet(net.sqrt, alpha=0.6) 
+plotnet(net.crn, alpha=0.6) 
 #Plot the neural network
-plot(net.sqrt)
+plot(net.crn)
  
 #Test the neural network on some training data
-testdata <- as.data.frame((1:10)^2) #Generate some squared numbers
-net.results <- compute(net.sqrt, testdata) #Run them through the neural network
+testdata <- as.data.frame(trainingoutput[12:45]) 
+testdata <-traininginput[10:25,]
+net.results <- compute(net.crn, testdata) #Run them through the neural network
  
 #Lets see what properties net.sqrt has
 ls(net.results)
@@ -67,8 +83,8 @@ ls(net.results)
 print(net.results$net.result)
  
 #Lets display a better version of the results
-cleanoutput <- cbind(testdata,sqrt(testdata), as.data.frame(net.results$net.result))
-colnames(cleanoutput) <- c("Input","Expected Output","Neural Net Output")
+cleanoutput <- cbind(testdata, trainingoutput[10:25], as.data.frame(net.results$net.result))
+#colnames(cleanoutput) <- c("Input","Expected Output","Neural Net Output")
 print(cleanoutput)
 
 plot(BostonHousing$medv, nnet.predict, main="Neural network predictions vs actual", xlab="Actual")
@@ -102,4 +118,5 @@ plotnet(net)
 # https://beckmw.wordpress.com/2014/12/20/neuralnettools-1-0-0-now-on-cran/
 # https://bzstat.wordpress.com/2011/07/10/using-lib-fann-in-r-via-rcpp/
 # install.packages('NeuralNetTools', dependencies=TRUE, repos='http://cran.rstudio.com/')
+# install.packages('neuralnet', dependencies=TRUE, repos='http://cran.rstudio.com/')
 ```
