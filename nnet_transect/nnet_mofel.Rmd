@@ -4,12 +4,17 @@ A neural network (NN) model is very similar to a non-linear regression model, wi
 
 Neural network is very good at learning non-linear function and also multiple outputs can be learnt at the same time. However, the training time is relatively long and it is also susceptible to local minimum traps. This can be mitigated by doing multiple rounds and pick the best learned model.
 
+  + <https://journal.r-project.org/archive/2010-1/RJournal_2010-1_Guenther+Fritsch.pdf>
+
 
 ```{r init}
 rm(list=ls())
 assign("last.warning", NULL, envir = baseenv())
 source("http://tmeits.github.io/24516/transect/setdw.R")
+mod_data <- url("http://tmeits.github.io/24516/transect/cli/aisori-cli-list.Rdata")
+load(mod_data)
 aisori_path<-paste0(mm_path,"/cli/aisori")
+load(file =  paste0(nnet_path, "/crn.Rdata"))
 ```
 #### Read Ivan cliStation adn CRN transect
 
@@ -27,9 +32,10 @@ north_crn <- openxlsx::read.xlsx(paste0(nnet_path, "/north_crn.xlsx"), sheet = 1
 
 yenisey_crn <- openxlsx::read.xlsx(paste0(nnet_path, "/yenisey_crn.xlsx"), sheet = 1, startRow = 1, colNames = TRUE, rowNames = FALSE, detectDates = FALSE, skipEmptyRows = TRUE, rows = NULL, cols = NULL, check.names = FALSE, namedRegion = NULL)
 
-save(altai_crn, lena_crn, north_crn, yenisey_crn, file =  paste0(nnet_path, "/nnet.Rdata"))
+save(altai_crn, lena_crn, north_crn, yenisey_crn, file =  paste0(nnet_path, "/crn.Rdata"))
 
 #altai_crn <- openxlsx::read.xlsx("C:/Users/IVA/Dropbox/24516/nnet_transect/altai_crn.xlsx", sheet = 3)
+
 ```
 #### 
 
@@ -87,6 +93,8 @@ cleanoutput <- cbind(testdata, trainingoutput[10:25], as.data.frame(net.results$
 #colnames(cleanoutput) <- c("Input","Expected Output","Neural Net Output")
 print(cleanoutput)
 
+plot(trainingoutput[10:25], net.results$net.result)
+
 plot(BostonHousing$medv, nnet.predict, main="Neural network predictions vs actual", xlab="Actual")
 
 ```
@@ -110,6 +118,8 @@ plotnet(net)
 
 ```
 ```{r tips}
+# https://toster.ru/q/79828
+# http://matlab.exponenta.ru/neuralnetwork/book1/task1/task1.php
 # https://www.r-bloggers.com/fitting-a-neural-network-in-r-neuralnet-package/
 # https://heuristically.wordpress.com/2011/11/17/using-neural-network-for-regression/
 # https://www.r-bloggers.com/general-regression-neural-network-with-r/
