@@ -42,6 +42,7 @@ str(aisoriStattion.df)
 #### Read and parse the list of files with climate data
   +  Print the number of observations and descriptive statistics from the raw file
   +  Stupidly removed the gaps in the measurements of temperature and precipitation
+  +  Save list dataframe to files
 ```{r read_transect_cli}
 readAisoriCliFile <- function(url) {
     cli <- read.csv(url, header = FALSE, sep = ";", dec = ".")
@@ -57,9 +58,17 @@ for (i in 1:length(aisoriStattion.df$city)) {
     print(str(cliOne[, c(2, 6, 8)]))
     print(summary(cliOne[, c(2, 6, 8)]))
     #summary(na.omit(cliOne[, c(2, 6, 8)]))
-    #str(na.omit(cliOne[, c(2, 6, 8)]))
-    
+    #str(na.omit(cliOne[, c(2, 6, 8)]))  
 }
+# create a list of tables of climate data
+cliList <- list()
+for (i in 1:length(aisoriStattion.df$city)) {
+    cliOne <- readAisoriCliFile(paste0(mm_path, "/cli/aisori/", aisoriStattion.df$cli[i]))
+    cat("+----------------------", paste0(aisoriStattion.df$wmo_id[i], "-", aisoriStattion.df$city[i]), 
+        "----------------------+\n")
+    cliList[[i]] <- na.omit(cliOne[, c(2, 6, 8)])  
+}
+save(cliList, aisoriStattion.df, file =  paste0(mm_path, "/cli/aisori/aisori-cli-list.Rdata"))
 ```
 ```{r write_xlsx_csv, echo=FALSE}
 write_xlsx_csv <- function() {
