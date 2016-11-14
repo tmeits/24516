@@ -33,9 +33,48 @@ north_crn <- openxlsx::read.xlsx(paste0(nnet_path, "/north_crn.xlsx"), sheet = 1
 yenisey_crn <- openxlsx::read.xlsx(paste0(nnet_path, "/yenisey_crn.xlsx"), sheet = 1, startRow = 1, colNames = TRUE, rowNames = FALSE, detectDates = FALSE, skipEmptyRows = TRUE, rows = NULL, cols = NULL, check.names = FALSE, namedRegion = NULL)
 
 save(altai_crn, lena_crn, north_crn, yenisey_crn, file =  paste0(nnet_path, "/crn.Rdata"))
-#
+
 #altai_crn <- openxlsx::read.xlsx("C:/Users/IVA/Dropbox/24516/nnet_transect/altai_crn.xlsx", sheet = 3)
 
+```
+#### Convert daily temperature data in the monthly
+```{r daily_temperature}
+
+M <- matrix(data = -9999, nrow = 11 * 100, ncol = 14)
+J <- 1
+for (i in 1:length(cliList)) {
+    c1 <- na.omit(cliList[[i]])
+    u1 <- unique(c1$Year)  # https://stat.ethz.ch/R-manual/R-devel/library/base/html/unique.html
+    for (ul in u1) {
+        uml <- unique(c1[c1$Year == ul, ]$Month)
+        if (length(uml) == 12) {
+            #cat("+-----------------------+\n")
+            k <- 3
+            for (ml in unique(c1[c1$Year == ul, ]$Month)) {
+                #cat(c1$Station[1], ul, ml, mean(c1[c1$Year == ul & c1$Month == 
+                #  ml, ]$TMEAN), "\n")
+                M[J, 1] <- c1$Station[1]
+                M[J, 2] <- ul
+                M[J, k] <- mean(c1[c1$Year == ul & c1$Month == ml, ]$TMEAN)
+                k <- k + 1
+            }
+        } else {
+            # 
+            cat("*** ")
+            cat(c1$Station[1], ul, uml, "\n")
+        }
+        J <- J + 1
+    }
+}
+MM<-M[M[, 1] != -9999, ]
+save(MM, file=paste0(nnet_path, "/MM.Rdata"))
+traininginput <- as.data.frame(MM)
+# Changing column names of a data frame
+N<-c("Station", "Year", "Cli_m1", "Cli_m2", "Cli_m3", "Cli_m4", "Cli_m5", "Cli_m6", "Cli_m7", "Cli_m8",  "Cli_m9", "Cli_m10", "Cli_m11", "Cli_m12")
+names(traininginput) <- N
+```
+#### Compare the annual growth rings on the stations and years with climate data
+```{r neuralnet_crn}
 ```
 #### 
 
