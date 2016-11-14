@@ -75,6 +75,35 @@ names(traininginput) <- N
 ```
 #### Compare the annual growth rings on the stations and years with climate data
 ```{r neuralnet_crn}
+library(neuralnet)
+library(NeuralNetTools)
+
+L <- length(traininginput[, 1])
+# the generated synthetic growth
+trainingoutput <- as.vector(runif(L, 0.3, 1.9))
+trainingdata <- cbind(traininginput, CRN = trainingoutput)
+trainingdata.sample <- trainingdata[, 3:15]
+# Train the neural network
+net.crn <- neuralnet(CRN ~ Cli_m1 + Cli_m2 + Cli_m3 + Cli_m4 + Cli_m5 + 
+    Cli_m6 + Cli_m7 + Cli_m8 + Cli_m9 + Cli_m10 + Cli_m11 + Cli_m12, trainingdata.sample, 
+    hidden = c(7,11,4), rep = 1, linear.output = TRUE, threshold = 0.03)
+# https://rdrr.io/cran/neuralnet/man/neuralnet.html    
+net.crn <- neuralnet(CRN ~ Cli_m1 + Cli_m2 + Cli_m3 + Cli_m4 + Cli_m5 + 
+    Cli_m6 + Cli_m7 + Cli_m8 + Cli_m9 + Cli_m10 + Cli_m11 + Cli_m12, trainingdata.sample, 
+    hidden = c(7, 11), threshold = 0.01, stepmax = 100000, rep = 1, startweights = NULL, 
+    learningrate.limit = NULL, learningrate.factor = list(minus = 0.5, plus = 1.2), 
+    learningrate = NULL, lifesign = "none", lifesign.step = 1000, algorithm = "rprop+", 
+    err.fct = "sse", act.fct = "logistic", linear.output = TRUE, exclude = NULL, 
+    constant.weights = NULL, likelihood = FALSE)
+
+# Save the neural network
+save(net.crn, traininginput, trainingoutput, trainingdata, trainingdata.sample, file=paste0(nnet_path, "/net.Rdata"))
+# Plot the neural network
+plot(net.crn, rep="best")
+plotnet(net.crn, alpha=0.6)
+#prediction(net.crn)
+gwplot(net.crn, selected.covariate="Cli_m5")
+gwplot(net.crn)
 ```
 #### 
 
@@ -157,6 +186,7 @@ plotnet(net)
 
 ```
 ```{r tips}
+# http://web.utk.edu/~grissino/software.htm#dendrometer
 # https://toster.ru/q/79828
 # http://matlab.exponenta.ru/neuralnetwork/book1/task1/task1.php
 # https://www.r-bloggers.com/fitting-a-neural-network-in-r-neuralnet-package/
