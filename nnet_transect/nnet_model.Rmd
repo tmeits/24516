@@ -5,6 +5,7 @@ A neural network (NN) model is very similar to a non-linear regression model, wi
 Neural network is very good at learning non-linear function and also multiple outputs can be learnt at the same time. However, the training time is relatively long and it is also susceptible to local minimum traps. This can be mitigated by doing multiple rounds and pick the best learned model.
 
   + <https://journal.r-project.org/archive/2010-1/RJournal_2010-1_Guenther+Fritsch.pdf>
+  + <install.packages('treeclim', dependencies=TRUE, repos='http://cran.rstudio.com/')>
 
 
 ```{r init}
@@ -81,12 +82,17 @@ library(NeuralNetTools)
 L <- length(traininginput[, 1])
 # the generated synthetic growth
 trainingoutput <- as.vector(runif(L, 0.3, 1.9))
+# lena_crn$128std
+# https://www.ncdc.noaa.gov/paleo/meas_table.html
+# http://dendrobox.org/
 trainingdata <- cbind(traininginput, CRN = trainingoutput)
 trainingdata.sample <- trainingdata[, 3:15]
 # Train the neural network
 net.crn <- neuralnet(CRN ~ Cli_m1 + Cli_m2 + Cli_m3 + Cli_m4 + Cli_m5 + 
     Cli_m6 + Cli_m7 + Cli_m8 + Cli_m9 + Cli_m10 + Cli_m11 + Cli_m12, trainingdata.sample, 
-    hidden = c(7,11,4), rep = 1, linear.output = TRUE, threshold = 0.03)
+    hidden = c(11,41,21, 41, 11), rep = 1, linear.output = TRUE, threshold = 0.1, stepmax = 100000)
+    
+
 # https://rdrr.io/cran/neuralnet/man/neuralnet.html    
 net.crn <- neuralnet(CRN ~ Cli_m1 + Cli_m2 + Cli_m3 + Cli_m4 + Cli_m5 + 
     Cli_m6 + Cli_m7 + Cli_m8 + Cli_m9 + Cli_m10 + Cli_m11 + Cli_m12, trainingdata.sample, 
@@ -98,6 +104,7 @@ net.crn <- neuralnet(CRN ~ Cli_m1 + Cli_m2 + Cli_m3 + Cli_m4 + Cli_m5 +
 
 # Save the neural network
 save(net.crn, traininginput, trainingoutput, trainingdata, trainingdata.sample, file=paste0(nnet_path, "/net.Rdata"))
+load(file=paste0(nnet_path, "/net.Rdata"))
 # Plot the neural network
 plot(net.crn, rep="best")
 plotnet(net.crn, alpha=0.6)
