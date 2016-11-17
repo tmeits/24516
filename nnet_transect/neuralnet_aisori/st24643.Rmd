@@ -11,6 +11,9 @@ assign("last.warning", NULL, envir = baseenv())
 source("http://tmeits.github.io/24516/transect/setdw.R")
 mod_data <- url("http://tmeits.github.io/24516/transect/cli/MT.Rdata")
 load(mod_data)
+
+load(file=paste0(nnet_path, "/MT.Rdata"))
+load(file=paste0(nnet_path, "/MT.055.Rdata"))
 ```
 #### Read Ivan CRNs for transect
 
@@ -22,7 +25,7 @@ require(openxlsx)
 russ055.rwi <- openxlsx::read.xlsx(paste0(nnet_path, "/neuralnet_aisori/russ055.xlsx"),
     sheet = 1, startRow = 1, colNames = TRUE, rowNames = FALSE, detectDates = FALSE,
     skipEmptyRows = TRUE, rows = NULL, cols = NULL, check.names = FALSE,
-    namedRegion = NULL)
+    namedRegion = NULL)   
 str(russ055.rwi)
 summary(russ055.rwi)
 plot(russ055.rwi, main ="Chronology RUSS055") 
@@ -37,42 +40,81 @@ qplot(year, rwi, data=russ055.rwi, geom = ""density")
 #### 
 ```{r set_24643}
 load(file=paste0(nnet_path, "/MM.Rdata"))
+load(file=paste0(nnet_path, "/MT.055.Rdata"))
 traininginput <- as.data.frame(MM)
 # Changing column names of a data frame
 N<-c("Station", "Year", "Cli_m1", "Cli_m2", "Cli_m3", "Cli_m4", "Cli_m5", "Cli_m6", "Cli_m7", "Cli_m8",  "Cli_m9", "Cli_m10", "Cli_m11", "Cli_m12")
 names(traininginput) <- N
 MT <-traininginput 
 unique(MT$Station)
-save(MT, file=paste0(nnet_path, "/MT.Rdata"))
+save(MT, russ055.rwi, file=paste0(nnet_path, "/MT.055.Rdata"))
 
+```
+#### To make the same start and end year input and output data
+```{r make_same}
+make_same <- function(train_in, train_out) {
+    min_in <- min(train_in$Year)
+    min_out <- min(train_out$year)
+    max_in <- max(train_in$Year)
+    max_out <- max(train_out$year)
+    start_year <- max(min_in, min_out)
+    end_year <- min(max_in, max_out)
+    return(c(start_year, end_year))
+}
+train_in <- MT[MT$Station == 24643, ]
+train_out <- russ055.rwi
+make_same(train_in, russ055.rwi)
+```
+####  restoration of the elapsed years by copying the previous year
+#### create a training training set
+```{r data_train}
+restoration_elapsed_years <- function(long_vector, short_vector) {
+
+    return(long_vector[-c(long_vector[-c(short_vector)])])
+
+}
+y1 <- c(1, 2, 3, 4, 5, 6, 7, 8, 9)
+y2 <- c(1, 2, 4, 5, 6, 8, 9)
+restoration_elapsed_years(y1, y2)
+
+#[1] 1 2 4 5 6 8 9
+
+data_train <- function(train_in, train_out, start_year, end_year) {
+   tr_in <-  train_in[train_in$Year >= start_year & train_in$Year <= end_year, ]
+   tr_out  <- train_out[train_out$year >= start_year & train_out$year <= end_year, ]
+   print(summary(tr_in))
+   print(summary(tr_out))
+   print(str(tr_in))
+   print(str(tr_out))
+   #trainingdata <- cbind(tr_in, CRN = as.vector(tr_out[, 2]))
+   return(list(tr_in, tr_out))
+}
+se_year <-  make_same(MT[MT$Station == 24643, ], russ055.rwi)
+print(se_year)
+train <- data_train(MT[MT$Station == 24643, ], russ055.rwi, se_year[1], se_year[2])
+str(train)
+train_in <- train[[1]]
+train_out <- train[[2]]
 ```
 #### Compare the annual growth rings on the stations and years with climate data
 ```{r neuralnet_crn}
 library(neuralnet)
 library(NeuralNetTools)
 set.seed(1410) # Make the sample reproducible
-traininginput <- MT
-traininginput <- traininginput[traininginput$Station == 24643, ]
-str(traininginput)
-summary(traininginput)
-plot(traininginput[2:14])
-trainingoutput <- russ055.rwi[russ055.rwi$year >= min(traininginput$Year) & russ055.rwi$year <= max(traininginput$Year), ]
-str(trainingoutput)
-summary(trainingoutput)
+train_in <- MT[MT$Station == 24643, ]
+str(train_in)
+summary(train_in)
+plot(train_in)
 # https://www.rstudio.com/wp-content/uploads/2015/03/ggplot2-cheatsheet.pdf
-qplot(1:12, sapply(traininginput[3:14], mean), geom = c("point", "smooth"))
-plot(1:12, sapply(traininginput[3:14], mean), geom = c("point", "smooth"))
-
-L <- length(traininginput[, 1])
-# the generated synthetic growth
-trainingoutput <- as.vector(runif(L, 0.3, 1.9))
+qplot(1:12, sapply(train_in[3:14], mean), geom = c("point", "smooth"))
+plot(1:12, sapply(train_in[3:14], mean), geom = c("point", "smooth"))
 
 # http://dendrobox.org/
-trainingdata <- cbind(traininginput, CRN = trainingoutput)
-trainingdata.sample <- trainingdata[, 3:15]
+
+train.sample <- trainingdata[, 3:15]
 # Train the neural network
 net.crn <- neuralnet(CRN ~ Cli_m1 + Cli_m2 + Cli_m3 + Cli_m4 + Cli_m5 + 
-    Cli_m6 + Cli_m7 + Cli_m8 + Cli_m9 + Cli_m10 + Cli_m11 + Cli_m12, trainingdata.sample, 
+    Cli_m6 + Cli_m7 + Cli_m8 + Cli_m9 + Cli_m10 + Cli_m11 + Cli_m12, train.sample, 
     hidden = c(11,41,21, 41, 11), rep = 1, linear.output = TRUE, threshold = 0.1, stepmax = 100000)
     
 
