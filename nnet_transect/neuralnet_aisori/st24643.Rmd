@@ -3,8 +3,6 @@
   + <iframe src="https://api-maps.yandex.ru/frame/v1/-/CZslE6LZ" width="560" height="400" frameborder="0"></iframe>
   + <http://pc70.gvc.gu.se/oth/PDFs/Linderholmetal2013.pdf>
   + <install.packages('treeclim', dependencies=TRUE, repos='http://cran.rstudio.com/')>
-
-russ055 Khotugn-Uladan-Tukulan 63.38 125.80 100 Pinus sp. 28 1687 1991 305 257.3 0.65 F Schweingruber
 ```{r init}
 rm(list=ls())
 assign("last.warning", NULL, envir = baseenv())
@@ -21,7 +19,7 @@ load(file=paste0(nnet_path, "/MT.055.Rdata"))
 ```{r read_rwi_data}
 Sys.setenv(R_ZIPCMD = paste0(mm_path, "/bin/zip.exe"))  # path to zip.exe
 require(openxlsx)  
-
+# russ055 Khotugn-Uladan-Tukulan 63.38 125.80 100 Pinus sp. 28 1687 1991 305 257.3 0.65 F Schweingruber
 russ055.rwi <- openxlsx::read.xlsx(paste0(nnet_path, "/neuralnet_aisori/russ055.xlsx"),
     sheet = 1, startRow = 1, colNames = TRUE, rowNames = FALSE, detectDates = FALSE,
     skipEmptyRows = TRUE, rows = NULL, cols = NULL, check.names = FALSE,
@@ -32,8 +30,8 @@ plot(russ055.rwi, main ="Chronology RUSS055")
 lines(russ055.rwi)  
 
 require(ggplot2) # http://ggplot2.org/book/qplot.pdf 
-qplot(year, rwi, data=russ055.rwi, geom = c("point","smooth"))
-qplot(year, rwi, data=russ055.rwi, geom = c("point","line","smooth"), colour = "RUSS055")
+qplot(year, rwi, data=russ055.rwi, geom = c("point","line","smooth"))
+qplot(year, rwi, data=russ055.rwi, geom = c("point","line","smooth"), color = "RUSS055")
 qplot(year, rwi, data=russ055.rwi, geom = c("boxplot"), colour = "RUSS055")
 qplot(year, rwi, data=russ055.rwi, geom = ""density")
 ```
@@ -103,6 +101,7 @@ load(file=paste0(nnet_path, "/train_in_out.24643.Rdata"))
 ```
 #### Compare the annual growth rings on the stations and years with climate data
 ```{r neuralnet_crn}
+install.packages('neuralnet', dependencies=TRUE, repos='http://cran.rstudio.com/')
 library(neuralnet)
 library(NeuralNetTools)
 set.seed(1410) # Make the sample reproducible
@@ -110,6 +109,7 @@ set.seed(1410) # Make the sample reproducible
 str(train_in)
 summary(train_in)
 plot(train_in)
+qplot(train_in)
 # https://www.rstudio.com/wp-content/uploads/2015/03/ggplot2-cheatsheet.pdf
 require(ggplot2)
 qplot(1:12, sapply(train_in[3:14], mean), geom = c("point", "smooth"))
@@ -118,28 +118,25 @@ plot(1:12, sapply(train_in[3:14], mean), geom = c("point", "smooth"))
 # http://dendrobox.org/
 
 train.sample <- data.frame(train_in, CRN=train_out2[,2]) [, 3:15]
+#
 t2<-rbind(train.sample,train.sample)
 train.sample <- rbind(t2,t2)
 train.sample <-rbind(train.sample, train.sample)
 # Train the neural network
 net.crn <- neuralnet(CRN ~ Cli_m1 + Cli_m2 + Cli_m3 + Cli_m4 + Cli_m5 + 
     Cli_m6 + Cli_m7 + Cli_m8 + Cli_m9 + Cli_m10 + Cli_m11 + Cli_m12, train.sample, 
-    hidden = c(41), rep = 1, linear.output = TRUE, threshold = 0.001, stepmax = 100000)
-#
-net.crn <- neuralnet(CRN ~ Cli_m1 + Cli_m2 + Cli_m3 + Cli_m4 + Cli_m5 + 
-    Cli_m6 + Cli_m7 + Cli_m8 + Cli_m9 + Cli_m10 + Cli_m11 + Cli_m12, train.sample, 
-    hidden = c(11,41,21, 41, 11), rep = 1, linear.output = TRUE, threshold = 0.1, stepmax = 100000)
-    
+    hidden = c(41), rep = 1, linear.output = TRUE, threshold = 0.01, stepmax = 100000)
 
-# https://rdrr.io/cran/neuralnet/man/neuralnet.html    
-net.crn <- neuralnet(CRN ~ Cli_m1 + Cli_m2 + Cli_m3 + Cli_m4 + Cli_m5 + 
-    Cli_m6 + Cli_m7 + Cli_m8 + Cli_m9 + Cli_m10 + Cli_m11 + Cli_m12, trainingdata.sample, 
-    hidden = c(7, 11), threshold = 0.01, stepmax = 100000, rep = 1, startweights = NULL, 
-    learningrate.limit = NULL, learningrate.factor = list(minus = 0.5, plus = 1.2), 
-    learningrate = NULL, lifesign = "none", lifesign.step = 1000, algorithm = "rprop+", 
-    err.fct = "sse", act.fct = "logistic", linear.output = TRUE, exclude = NULL, 
-    constant.weights = NULL, likelihood = FALSE)
-
+testdata <- train.sample[, 1:12]
+net.results <- compute(net.crn, testdata) #Run them through the neural network
+ls(net.results)
+#Lets see the results
+print(net.results$net.result)
+plot(train_out2[,1], net.results$net.result)
+lines(train_out2[,1], net.results$net.result)
+lines(train_out2[,1], train.sample[, 13])
+lines(train_out2[,1], train.sample[, 13])
+knitr::kable(round(train.sample,2), format = "markdown")
 # Save the neural network
 save(net.crn, traininginput, trainingoutput, trainingdata, trainingdata.sample, file=paste0(nnet_path, "/net.Rdata"))
 load(file=paste0(nnet_path, "/net.Rdata"))
