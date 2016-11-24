@@ -1,0 +1,125 @@
+####  Using neural network for create regression model CLIs-CRNs
+  + <https://yandex.ru/maps/-/CZwvQZpz>
+```{r init}
+rm(list=ls())
+assign("last.warning", NULL, envir = baseenv())
+source("http://tmeits.github.io/24516/transect/setdw.R")
+wd <- "C:/Users/IVA/Dropbox/24516/nnet_transect/nnet_24643"
+wd <- "Z:/home/larisa/Dropbox/24516/nnet_transect/nnet_24643"
+setwd(wd)
+```
+#### Reading generalized chronologies from the site https://www.ncdc.noaa.gov/paleo/chron_table.html
+  + <https://www.ncdc.noaa.gov/paleo/meas_table.html>
+  + <ftp://ftp.ncdc.noaa.gov/pub/data/paleo/treering/updates/schweingruber/chronologies/russ055/russ055w_tabs.crn>
+  + <ftp://ftp.ncdc.noaa.gov/pub/data/paleo/treering/updates/schweingruber/chronologies/russ055/russ055w_out.txt>
+  + <https://s3.amazonaws.com/assets.datacamp.com/img/blog/data+table+cheat+sheet.pdf>
+```{r read_rwi_data}
+library(reshape2)
+library(data.table)
+# http://meteo.ru/data/155-meteostations
+# 63.23, 125.48   63.95, 124.83  https://yandex.ru/maps/-/CZwvQZpz
+DTw <- fread("ftp://ftp.ncdc.noaa.gov/pub/data/paleo/treering/updates/schweingruber/chronologies/russ055/russ055w_tabs.crn")
+DTe <- fread("ftp://ftp.ncdc.noaa.gov/pub/data/paleo/treering/updates/schweingruber/chronologies/russ055/russ055e_tabs.crn")
+str(DTw)
+head(DTw)
+DTw[YEAR %in% c(1:5000)]
+length(c(min(DTw[,YEAR]): max(DTw[,YEAR]))) == length(DTw[,YEAR])
+DTw[, .(YEAR,STD)]
+DTw[, plot(YEAR,STD,type="l", col="green")]
+DTw[, lines(YEAR,RES,type="l", col="red")]
+DTw[, lines(YEAR,ARS,type="l", col="blue")]
+
+```
+#### Read climate station data 24643 (Temperature, precipitation, illumination)
+```{r set_24643}
+DT.temp_url <- "https://raw.githubusercontent.com/tmeits/24516/master/nnet_24643/24643_temp.txt"
+DTt <- fread(DT.temp_url)
+str(DTt)
+
+Month <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+toupper(Month)
+tolower(Month)
+setnames(DTt,  names(DTt), c(c("WMO","YEAR"), Month))
+names(DTt)
+
+summary(DTt)
+# https://sites.ualberta.ca/~ahamann/teaching/renr690/R_Cheat_Data.pdf
+# https://xi-liang.com/2016/02/16/master-dplyr/
+#http://predictive5.com/2015/05/19/dplyr-%D0%B4%D0%BB%D1%8F-%D0%BC%D0%B0%D0%BD%D0%B8%D0%BF%D1%83%D0%BB%D1%8F%D1%86%D0%B8%D0%B8-%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%BC%D0%B8-%D0%B2-r-%D1%87%D0%B0%D1%81%D1%82%D1%8C-1/
+#https://rpubs.com/aa989190f363e46d/dplyr_intro
+#http://r.psylab.info/blog/2015/04/21/magrittr/
+#https://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf
+#!http://r.psylab.info/blog/2015/06/11/remove-na-performance/
+#http://r.psylab.info/blog/2015/04/15/parse-html/ !!!!
+```
+####
+```{r synthetic_data}
+gen_data <- function(nrow = 10e3, ncol = 10, na.perc = 0.1) {
+    m <- replicate(ncol, runif(nrow))
+    for (col in 1:ncol) {
+        idx <- sample(1:nrow, size = floor(nrow * na.perc))
+        m[idx, col] <- NA
+    }
+    return(as.data.frame(m))
+}
+
+```
+#### Tips
+```{r tips}
+
+#http://www.habrahabr.net/thread/4406
+#http://r-analytics.blogspot.ru/2012/11/shiny-r.html#.WDGSy8WalKg
+#http://biostat-r.blogspot.ru/2016/01/tidy-data.html#more  !!!!!
+#http://belousovv.ru/markdown_syntax
+#http://cyberleninka.ru/article/n/postroenie-bystryh-approksimatsionnyh-moduley-resheniya-zadach-vysokochastotnogo-elektromagnitnogo-karotazha
+#ttp://sil.uc.edu/pdfFiles/pawel/PN_ITM2012_WRF_Ozone.pdf
+#http://pca.narod.ru/lecture4.htm
+#https://geektimes.ru/post/211610/
+#http://swblog.ru/articles/other/postroenie-nejronnoj-seti.html
+#https://geographyofrussia.com/set-meteostancij/
+#http://aakinshin.net/ru/about/
+#https://rstudio-pubs-static.s3.amazonaws.com/65323_76ad54e90cd845eab4b7569c81c9d5b0.html
+#https://cran.r-project.org/web/views/ReproducibleResearch.html
+#http://ru.stackoverflow.com/questions/467172/%D0%9A%D0%B0%D0%BA-%D0%BF%D0%B5%D1%80%D0%B5%D0%BD%D0%B5%D1%81%D1%82%D0%B8-%D1%82%D0%B0%D0%B1%D0%BB%D0%B8%D1%86%D1%83-%D0%B2-%D1%83%D0%B4%D0%BE%D0%B1%D0%BD%D1%8B%D0%B9-%D0%B4%D0%BB%D1%8F-%D0%BF%D1%83%D0%B1%D0%BB%D0%B8%D0%BA%D0%B0%D1%86%D0%B8%D0%B8-%D1%84%D0%BE%D1%80%D0%BC%D0%B0%D1%82
+#https://www.ncdc.noaa.gov/paleo/treeinfo.html
+
+
+
+#https://habrahabr.ru/company/infopulse/blog/301914/
+#https://statist.shinyapps.io/bioeq/
+# http://web.utk.edu/~grissino/software.htm#dendrometer
+# https://toster.ru/q/79828
+# http://matlab.exponenta.ru/neuralnetwork/book1/task1/task1.php
+# https://www.r-bloggers.com/fitting-a-neural-network-in-r-neuralnet-package/
+# https://heuristically.wordpress.com/2011/11/17/using-neural-network-for-regression/
+# https://www.r-bloggers.com/general-regression-neural-network-with-r/
+# http://gekkoquant.com/2012/05/26/neural-networks-with-r-simple-example/
+# https://rpubs.com/mbaumer/NeuralNetworks
+# https://beckmw.wordpress.com/2014/12/20/neuralnettools-1-0-0-now-on-cran/
+# https://bzstat.wordpress.com/2011/07/10/using-lib-fann-in-r-via-rcpp/
+# install.packages('NeuralNetTools', dependencies=TRUE, repos='http://cran.rstudio.com/')
+# install.packages('neuralnet', dependencies=TRUE, repos='http://cran.rstudio.com/')
+# install.packages('txtplot', dependencies=TRUE, repos='http://cran.rstudio.com/')
+# install.packages('tcltk', dependencies=TRUE, repos='http://cran.rstudio.com/')
+# install.packages('dplyr', dependencies=TRUE, repos='http://cran.rstudio.com/')
+
+# http://www.theanalysisfactor.com/r-programming-plotting-color-part-2-qplot/
+# http://brooksandrew.github.io/simpleblog/articles/deploying-apps-with-shinyapps-io/
+# http://user2014.stat.ucla.edu/files/tutorial_Matt.pdf
+```
+#### Atom 
+
+D410PTL
+DG945GCLF
+http://cdimage.ubuntu.com/ubuntu-mate/releases/16.04.1/release/ubuntu-mate-16.04.1-desktop-i386.iso
+http://ark.intel.com/ru/products/48480/Intel-Desktop-Board-D410PTL
+http://www.nix.ru/autocatalog/motherboards_intel/INTEL-D410PTL-OEM-Atom-D410-NM10-SVGA-plus-LAN-SATA-Mini-ITX-2DDR2-PC2-5300_97721.html
+http://ark.intel.com/products/69042/Intel-Desktop-Board-D2550MUD2
+KVR1333D3S8S9/2G
+PC3-10600 CL9 204 
+http://www.intel.com/content/dam/support/us/en/documents/motherboards/desktop/d525mw/d525mw_d525mwv_techprodspec03.pdf
+
+```{r atom}
+#
+
+```
